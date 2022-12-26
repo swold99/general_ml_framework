@@ -1,0 +1,8 @@
+matplotlib==3.2.2
+numpy==1.22.4
+opencv_python_headless==4.5.4.60
+pandas==1.5.1
+torch==1.12.1
+torchmetrics==0.11.0
+torchvision==0.13.1
+tqdm==4.64.1
