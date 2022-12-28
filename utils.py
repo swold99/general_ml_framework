@@ -103,7 +103,7 @@ def plot_distribution(img):
 
 def save_model(model,name):
     """Save the state of the model"""
-    torch.save(model.state_dict(), os.path.join("models", name))
+    torch.save(model.state_dict(), os.path.join("weights", name))
 
 def load_model_state(model, name, local=True):
     """Loads the state of the model which is saved in *name*"""

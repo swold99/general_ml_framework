@@ -25,7 +25,6 @@ from utils import move_to
 def train(file_name, data_folders, params, transform_params, nr_ensemble_models=1, load_model=False):
 
     # Extract params
-    cross_weights = params['cross_weights']
     learning_rate = params['learning_rate']
     classes = params['classes']
     use_cuda = params['use_cuda']
@@ -34,7 +33,6 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
 
     batch_size = params['batch_size']
     num_epochs = params['num_epochs']
-    quality_inspection = params['quality_inspection']
 
     data_path_train = data_folders['train']
     data_path_val = data_folders['val']
@@ -48,7 +46,7 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     model = create_model(use_cuda, classes)
 
     # The objective (loss) function
-    objective = nn.CrossEntropyLoss(weight=cross_weights.to(device))
+    objective = nn.CrossEntropyLoss()
 
     best_acc = 0
     best_epoch = 0
@@ -57,7 +55,7 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     #######################
     ## Train the network ##
     #######################
-    train_start=time()
+    train_start=time.time()
 
     # The optimizer used for training the model
     optimizer = torch.optim.SGD(params=model.parameters(), lr=learning_rate, momentum=momentum, nesterov=True)
@@ -106,12 +104,7 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
             # Iterate over data.
             for batch_idx, (inputs, labels, fnames) in enumerate(tqdm(dataloaders[phase])):
                 inputs = inputs.to(device)
-                if not quality_inspection:
-                    labels = labels.to(device)
-                else:
-                    labels = list(labels)
-                    labels = torch.tensor([int(label)-1 for label in labels])
-                    labels = move_to(labels, device)
+                labels = labels.to(device)
 
                 # zero the parameter gradients
                 optimizer.zero_grad()

@@ -17,9 +17,9 @@ def main():
 
     # Specify folders for data
     data_folders = {}
-    #data_folders['train'] =
-    #data_folders['val'] =
-    #data_folders['test'] =
+    data_folders['train'] = None
+    data_folders['val'] = None
+    data_folders['test'] = None
 
     experiment_name= "exp1"
 
@@ -52,7 +52,6 @@ def train_and_test(experiment_name, data_folders, params, transform_params):
 
 def only_test(model_name, data_folders, params, transform_params):
 
-    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights", experiment_name + ".pth")
     model = create_model(params['use_cuda'], params['classes'])
     name = model_name + ".pth"
     saved_model = load_model_state(model, model_name)
@@ -66,7 +65,7 @@ def inference(model_name, image_path, params, transform_params):
     model_name = model_name + ".pth"
     saved_model = load_model_state(model, model_name)
     for image_name in os.listdir(image_path):
-        max_score = inference(model_name, os.path.join(image_path, image_name), params, transform_params)
+        max_score = inference(saved_model, os.path.join(image_path, image_name), params, transform_params)
     return
 
 
