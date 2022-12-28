@@ -30,6 +30,9 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     use_cuda = params['use_cuda']
     device = params['device']
     momentum = params['momentum']
+    num_workers = params['num_workers']
+    step_size = params['scheduler_step_size']
+    lr_gamma = params['lr_gamma']
 
     batch_size = params['batch_size']
     num_epochs = params['num_epochs']
@@ -60,7 +63,7 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     # The optimizer used for training the model
     optimizer = torch.optim.SGD(params=model.parameters(), lr=learning_rate, momentum=momentum, nesterov=True)
 
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=lr_gamma)
 
 
 
@@ -76,7 +79,7 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
                     }
 
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
-                                                shuffle=True, num_workers=8)
+                                                shuffle=True, num_workers=num_workers)
                     for x in ['train', 'val']}
 
     dataset_sizes = {x: len(image_datasets[phase]) for phase in phases}

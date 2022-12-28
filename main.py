@@ -6,6 +6,7 @@ import torch
 from tqdm import tqdm
 
 from inference import inference
+from inference import inference as infer
 from model.create_model import create_model
 from train import train
 from utils import load_model_state
@@ -20,6 +21,7 @@ def main():
     data_folders['train'] = None
     data_folders['val'] = None
     data_folders['test'] = None
+    data_folders['inferece'] = "inference_demo"
 
     experiment_name= "exp1"
 
@@ -36,7 +38,7 @@ def main():
         train_and_test(experiment_name, data_folders, params, transform_params)
 
     if 0:
-        test(experiment_name, data_folders, params, transform_params)
+        only_test(experiment_name, data_folders, params, transform_params)
 
     if 0:
         inference(experiment_name, data_folders, params, transform_params)
@@ -44,8 +46,7 @@ def main():
 
 def train_and_test(experiment_name, data_folders, params, transform_params):
 
-    trained_model, metrics = train(experiment_name, data_folders, params, transform_params)
-    pprint(metrics)
+    trained_model, _,_,_ = train(experiment_name, data_folders, params, transform_params)
     metrics = test(trained_model, data_folders, params, transform_params)
     pprint(metrics)
     return
@@ -59,13 +60,15 @@ def only_test(model_name, data_folders, params, transform_params):
     pprint(metrics)
     return
 
-def inference(model_name, image_path, params, transform_params):
-
+def inference(model_name, data_folders, params, transform_params):
+    image_path = data_folders['inference']
     model = create_model(params['use_cuda'], params['classes'])
-    model_name = model_name + ".pth"
+    predictions = []
     saved_model = load_model_state(model, model_name)
     for image_name in os.listdir(image_path):
-        max_score = inference(saved_model, os.path.join(image_path, image_name), params, transform_params)
+        predictions.extend(infer(saved_model, os.path.join(image_path, image_name), params, transform_params))
+
+    pprint(predictions)
     return
 
 
@@ -82,6 +85,7 @@ def get_default_params():
     params['nesterov'] = True # use nesterov trick in optimizer
     params['scheduler_step_size'] = 7
     params['lr_gamma'] = 0.1 # learning rate decay
+    params['num_workers'] = 0
     return params
 
 
