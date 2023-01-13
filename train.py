@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from custom_transforms import compose_transforms
 from customimagedataset import CustomImageDataset
-from utils import move_to, collate_fn
+from utils import move_to
 
 
 def train(file_name, data_folders, params, transform_params, nr_ensemble_models=1, load_model=False):
@@ -31,13 +31,14 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     device = params['device']
     momentum = params['momentum']
     num_workers = params['num_workers']
+    step_size = params['scheduler_step_size']
+    lr_gamma = params['lr_gamma']
 
     batch_size = params['batch_size']
     num_epochs = params['num_epochs']
-    splits = params['splits']
-    quicktest = params['quicktest']
 
-    data_folder = data_folders['data']
+    data_path_train = data_folders['train']
+    data_path_val = data_folders['val']
 
     num_classes = len(classes)
 
@@ -45,7 +46,7 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     ## Init the network and optimizer ##
     ####################################
 
-    model = create_model(model="faster-rcnn", use_cuda=use_cuda, num_classes=num_classes)
+    model = create_model(use_cuda, classes)
 
     # The objective (loss) function
     objective = nn.CrossEntropyLoss()
@@ -62,27 +63,26 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     # The optimizer used for training the model
     optimizer = torch.optim.SGD(params=model.parameters(), lr=learning_rate, momentum=momentum, nesterov=True)
 
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, num_epochs, eta_min=0.001)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=lr_gamma)
 
 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-    train_tsfrm = compose_transforms(transform_params=transform_params, train=True)
-    val_tsfrm = compose_transforms(transform_params=transform_params, train=False)
+    tsfrm = compose_transforms(transform_params=transform_params)
 
     phases = ['train', 'val']
 
-    image_datasets = {'train' : CustomImageDataset(data_folder, splits, "train", quicktest=quicktest, transform=train_tsfrm),
-                    'val' : CustomImageDataset(data_folder, splits, "val", quicktest=quicktest, transform=val_tsfrm)
+    image_datasets = {'train' : CustomImageDataset(data_path_train, transform=tsfrm),
+                    'val' : CustomImageDataset(data_path_val, transform=tsfrm)
                     }
 
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
-                                                shuffle=True, num_workers=num_workers, collate_fn=collate_fn)
+                                                shuffle=True, num_workers=num_workers)
                     for x in ['train', 'val']}
 
-    dataset_sizes = {phase: len(image_datasets[phase]) for phase in phases}
+    dataset_sizes = {x: len(image_datasets[phase]) for phase in phases}
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -90,62 +90,59 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     best_loss = np.inf
     best_epoch = 0
 
-    loss_hist = {"train": Averager(), "val": Averager()}
-    loss_list = {"train": [], "val": []}
-
-    save_best_model = SaveBestModel()
-
     for epoch in range(num_epochs):
         print(f'Epoch {epoch}/{num_epochs - 1}')
         print('-' * 10)
 
-        start = time.time()
         # Each epoch has a training and validation phase
         for phase in phases:
-            print(phase)
             if phase == 'train':
                 model.train()  # Set model to training mode
             else:
                 model.eval()   # Set model to evaluate mode
 
-            prog_bar = tqdm(dataloaders[phase], total=len(dataloaders[phase]))
+            running_loss = 0.0
+            running_corrects = 0
 
             # Iterate over data.
-            for batch_idx, (inputs, targets, fnames) in enumerate(prog_bar):
-                inputs = torch.stack(inputs).to(device)
-                targets = list(targets)
-                targets = move_to(targets, device)
+            for batch_idx, (inputs, labels, fnames) in enumerate(tqdm(dataloaders[phase])):
+                inputs = inputs.to(device)
+                labels = labels.to(device)
 
                 # zero the parameter gradients
-                optimizer.zero_grad(set_to_none=True)
+                optimizer.zero_grad()
 
                 # forward
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
-                    loss_dict = model(inputs, targets)
-
-                    losses = sum(loss for loss in loss_dict.values())
-                    loss_value = losses.item()
-
-                    loss_list[phase].append(loss_value)
-                    loss_hist[phase].send(loss_value)
-
+                    outputs = model(inputs)
+                    _, preds = torch.max(outputs, 1)
+                    loss = objective(outputs, labels)
 
                     # backward + optimize only if in training phase
                     if phase == 'train':
-                        losses.backward()
+                        loss.backward()
                         optimizer.step()
 
-                prog_bar.set_description(desc=f"Loss: {loss_value:.4f}")
+                # statistics
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
+            if phase == 'train':
+                scheduler.step()
 
-            scheduler.step()
+            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-        print(f"Epoch #{epoch+1} train loss: {loss_hist['train'].value:.3f}")
-        print(f"Epoch #{epoch+1} validation loss: {loss_hist['val'].value:.3f}")
-        end = time.time()
-        print(f"Took {((end - start) / 60):.3f} minutes for epoch {epoch}")
+            print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
-        save_best_model(loss_hist["val"].value, epoch, model, optimizer)
+            # deep copy the model
+            if phase == 'val' and epoch_loss < best_loss: # epoch_acc > best_acc:
+                best_epoch = epoch
+                best_acc = epoch_acc
+                best_loss = epoch_loss
+                best_model_wts = copy.deepcopy(model.state_dict())
+
+        print()
 
     time_elapsed = time.time() - since
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
@@ -157,49 +154,3 @@ def train(file_name, data_folders, params, transform_params, nr_ensemble_models=
     save_model(model, file_name + ".pth")
 
     return model, best_acc, best_epoch, best_loss
-
-
-class Averager:
-    def __init__(self):
-        self.current_total = 0.0
-        self.iterations = 0.0
-
-    def send(self, value):
-        self.current_total += value
-        self.iterations += 1
-
-    @property
-    def value(self):
-        if self.iterations == 0:
-            return 0
-        else:
-            return 1.0 * self.current_total / self.iterations
-
-    def reset(self):
-        self.current_total = 0.0
-        self.iterations = 0.0
-
-class SaveBestModel:
-    """
-    Class to save the best model while training. If the current epoch's
-    validation loss is less than the previous least less, then save the
-    model state.
-    """
-    def __init__(
-        self, best_valid_loss=float('inf')
-    ):
-        self.best_valid_loss = best_valid_loss
-
-    def __call__(
-        self, current_valid_loss,
-        epoch, model, optimizer
-    ):
-        if current_valid_loss < self.best_valid_loss:
-            self.best_valid_loss = current_valid_loss
-            print(f"\nBest validation loss: {self.best_valid_loss}")
-            print(f"\nSaving best model for epoch: {epoch+1}\n")
-            torch.save({
-                'epoch': epoch+1,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                }, 'outputs/best_model.pth')
