@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchvision.models import ResNet18_Weights, resnet18
 
 
-def create_model(use_cuda, num_classes):
+def create_model(network, device, num_classes):
 
     # UPDATE MODEL
     model = resnet18(weights=ResNet18_Weights.DEFAULT)
@@ -11,7 +11,7 @@ def create_model(use_cuda, num_classes):
 
     # Fully connected layer
     model.fc = nn.Linear(num_ftrs, num_classes)    
-    if use_cuda:
+    if "cuda" in device:
             model.cuda()
             cudnn.benchmark = True
     

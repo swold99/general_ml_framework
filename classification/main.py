@@ -1,14 +1,14 @@
 import os
 from pprint import pprint
-from test import test
+from classification.test import test
 
 import torch
 from tqdm import tqdm
 
 from inference import inference
 from inference import inference as infer
-from model.create_model import create_model
-from train import train
+from networks.create_model import create_model
+from classification.train import train
 from utils import load_model_state
 
 

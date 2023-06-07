@@ -4,6 +4,9 @@ import pandas as pd
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
+def create_dataset(use_dataset, quicktest, phase):
+    return 1
+
 class CustomImageDataset(Dataset):
     """Class that creates a dataset from image directory ready to be sent to a Dataloader"""
     def __init__(self, img_dir, transform=None):

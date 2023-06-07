@@ -144,30 +144,7 @@ def get_default_transform_params():
     transform_params = {}
     return transform_params
 
-def get_metrics(preds, targets, num_classes):
-    # Get a bunch of classification metrics
-    return {
-        "accuracy" : accuracy(preds, targets),
-        #"auroc" : binary_auroc(torch.FloatTensor([float(p) for p in preds]), targets),
-        "average_precision" : average_precision(preds, targets),
-        "cohen_kappa" : cohen_kappa(preds, targets, num_classes),
-        "confusion_matrix" : confusion_matrix(preds, targets, num_classes),
-        #"coverage_error" : coverage_error(preds, targets), #only for multilabel
-        #"dice" : dice(preds, targets), #good measure in image segmentation methods
-        "f1_score" : f1_score(preds, targets),
-        "fbeta_score" : fbeta_score(preds, targets),
-        "hamming_distance" : hamming_distance(preds, targets), #same as 1-accuracy for binary data
-        "hinge_loss" : hinge_loss(preds, targets), #typically used for SVMs
-        "jaccard_index" : jaccard_index(preds, targets, num_classes), #intersection over union
-        "matthews_correlation_coefficient" : matthews_corrcoef(preds, targets, num_classes),
-        "precision" : precision(preds, targets),
-        "precision_recall" : precision_recall(preds, targets),
-        #"precision_recall_curve" : precision_recall_curve(preds, targets, num_classes),
-        "recall" : recall(preds, targets),
-        "roc" : roc(preds, targets),
-        "specificity" : specificity(preds, targets),
-        "stat_scores" : stat_scores(preds, targets)
-    }
+
 
 def collate_fn(batch):
     # Really useful function
@@ -314,3 +291,36 @@ def save_annotation(img_name, boxes, pred_classes):
     with open(os.path.join("/courses", "TSBB11", "tsbb11_2022ht_1d-timber-x-ray", "new_test_images", "annotations", annot_name), 'w', encoding='utf-8') as f:
         json.dump(json_dict, f, ensure_ascii=False, indent=4)
 
+
+def save_model(model, name):
+    """Save the state of the model"""
+    folder = os.path.join(os.curdir, "weights")
+    path = os.path.join(folder, name + ".pth")
+    torch.save(model.state_dict(), path)
+
+def save_fig(train_loss, val_loss, f1_train=None, f1_val=None,
+             exp_name=None, meas="F1-score"):
+    # Saves curve with loss and f1-score from training
+    f, (ax1, ax2) = plt.subplots(1, 2)
+    x = np.arange(len(train_loss))
+
+    ax1.plot(x, train_loss, label="Training")
+    ax1.plot(x, val_loss, label="Validation")
+    ax1.set_xlabel("Epochs")
+    ax1.set_ylabel("Loss")
+    ax1.set_title("Loss")
+    ax1.legend(loc="upper right")
+
+    if f1_train is not None:
+        ax2.plot(x, f1_train, label="Training")
+        ax2.plot(x, f1_val, label="Validation")
+        ax2.set_xlabel("Epochs")
+        ax2.set_ylabel(meas)
+        ax2.set_title(meas)
+        ax1.legend(loc="lower right")
+        f.suptitle("Training vs Validation curves")
+
+    fname = "training_curves/" + exp_name + ".png"
+    f.savefig(fname)
+
+    return
