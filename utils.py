@@ -1,109 +1,18 @@
-import json
 import os
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torchmetrics.functional.classification import *
-from torchvision.io import read_image
+from torchmetrics.functional.classification import confusion_matrix
 from torchvision.utils import draw_bounding_boxes
-from tqdm import tqdm
-
-from custom_transforms import compose_transforms
 
 
-def load_show_image(path):
-    # Loads and shows single image, not used anywhere
-    transform_params = get_default_transform_params()
-    image = read_image(path)
-    tsfrm = compose_transforms(transform_params=transform_params)
-    image = tsfrm((image, path))
-    show_tensor_image(image)
-    return
-
-def load_imgs(folder, limit=None):
-    # Loads all images from specified folder path (relative to current folder)
-    images = []
-    if limit is None:
-        list_folder = os.listdir(folder)
-    else:
-        list_folder = os.listdir(folder)[:limit]
-
-    for filename in tqdm(sorted(list_folder)):
-        image = read_image(os.path.join(folder, filename))
-        if image is not None:
-            images.append(image)
-    return images
-
-def show_image(img):
-    # Show png image, not used anywhere
-    cv2.imshow('Bildfan', img)
-    cv2.waitKey(0)
-    return
-
-def show_tensor_image(img, RGB = False, figsize = (100,100), wait_for_button=False):
-    plt.figure(figsize=figsize)
-    # Show tensor image
-    if wait_for_button:
-        plt.ion()
-
-    if RGB: # Channels need to be permutated if RGB
-        plt.imshow(img.permute(1, 2, 0), cmap='gray')
-    else:
-        if len(img.shape) == 4: # if image has been resized, it will be a 4d-tensor
-            img = img.squeeze(0)
-        # Squeeze away the channel dim
-        if len(img.shape) == 3:
-            img = img.squeeze(0)
-        plt.imshow(img,  cmap='gray')
-    if wait_for_button:
-        plt.waitforbuttonpress()
-        plt.close()
-    else:
-        plt.show()
-    return
-
-def visualize_dataset(folder, figsize = (6.4, 4.8), start_image = 1, labels=True, resize=(512, 1024), transform_params=None):
-    # Visualizes dataset
-
-    transform_params['resize'] = resize
-    tsfrm = compose_transforms(transform_params=transform_params)
-
-    # Loop through folder
-    for file_nr, filename in tqdm(enumerate(sorted(os.listdir(folder)))):
-        if file_nr >= start_image:
-
-            # Read and transform image
-            image = read_image(os.path.join(folder, filename))
-            image = tsfrm((image, filename))
-
-            # Show labels if image is labeled
-            if labels:
-                label_dict = {}
-                show_labeled_image(image, label_dict)
-            else:
-                show_tensor_image(image, figsize=figsize, wait_for_button=True, RGB=True)
-            print('\n Name: ', filename, ' \n File number: ', file_nr)
-    return
-
-def plot_distribution(img):
-    # Plots distribution of pixel values in image, not used anywhere BUT VERY GOOD FOR VISUALIZING AND ANALYZING DATA. REMEMBER THIS FOR THE REPORT
-
-    # Convert tensor image to numpy array
-    img_np = np.array(img)
-
-    # plot the pixel values
-    plt.hist(img_np.ravel(), bins=50, density=True)
-    plt.xlabel("pixel values")
-    plt.ylabel("relative frequency")
-    plt.title("distribution of pixels")
-    plt.show()
-    return
-
-def save_model(model,name):
+def save_model(model, name):
     """Save the state of the model"""
-    torch.save(model.state_dict(), os.path.join("weights", name))
+    folder = os.path.join(os.curdir, "weights")
+    path = os.path.join(folder, name + ".pth")
+    torch.save(model.state_dict(), path)
 
 def load_model_state(model, name, local=True):
     """Loads the state of the model which is saved in *name*"""
@@ -112,39 +21,6 @@ def load_model_state(model, name, local=True):
     model.load_state_dict(state_dict)
     model.eval()
     return model
-
-def predict_single_image(model, img_path):
-    # Predicts class of single image, not used anywhere
-
-    transform_params = get_default_transform_params()
-    model.eval()
-    img = read_image(img_path)
-    trans = compose_transforms(transform_params=transform_params)
-    input = trans((img, img_path))
-    print(input.shape)
-    input = input.view(1, input.shape[0], input.shape[1], input.shape[2]).cuda()
-
-    # Feed-forward the network
-    outputs = model(input)
-
-    #print("outputs: ", outputs)
-    _, predicted = torch.max(outputs.data, 1)
-    if predicted == 0:
-        label = 'Not metal'
-    else:
-        label = 'Metal'
-    plt.figure()
-    plt.title(f"Image path: {img_path}, Predicted label: {label}")
-    input = input.squeeze(0)
-    show_tensor_image(input.cpu(), RGB=True)
-    return label
-
-def get_default_transform_params():
-    # Only for the convenience of the function above
-    transform_params = {}
-    return transform_params
-
-
 
 def collate_fn(batch):
     # Really useful function
@@ -253,50 +129,11 @@ def show_bounding_boxes(image, pred_boxes, true_boxes, pred_classes, label_class
     if torch.numel(pred_boxes) == 0:
         drawn_boxes = drawn_boxes.to('cpu')
 
-    show_tensor_image(drawn_boxes, RGB=True, wait_for_button=True)
+    cv2.imshow(drawn_boxes)
+    cv2.waitKey(0)
     return
 
-def show_labeled_image(img, label_dict):
-    # Shows only labeled bounding boxes along with the image
-    img = img*255
-    img = img.type(torch.uint8)
-    if img.shape[0] == 1:
-        img = img.repeat(3,1,1)
-    if not label_dict:
-        plt.imshow(img.permute(1,2,0))
-    else:
-        bounding_boxes = label_dict['boxes']
-        result = draw_bounding_boxes(img, bounding_boxes)
-        plt.imshow(result.permute(1,2,0))
-    plt.waitforbuttonpress()
-    plt.close()
-    return
 
-def save_annotation(img_name, boxes, pred_classes):
-    json_dict = {}
-    shapes = []
-    for idx in range(len(pred_classes)):
-        shapes.append({
-            "label": pred_classes[idx],
-            "points" : [
-                [int(boxes[idx][1]), int(boxes[idx][0])],
-                [int(boxes[idx][1]), int(boxes[idx][2])],
-                [int(boxes[idx][3]), int(boxes[idx][0])],
-                [int(boxes[idx][3]), int(boxes[idx][2])]
-                ]
-            })
-    json_dict['shapes'] = shapes
-    annot_name = img_name.split(".")[0] + "_annot.json"
-    #change where to save annotations, didn't want to save with all other annotations yet
-    with open(os.path.join("/courses", "TSBB11", "tsbb11_2022ht_1d-timber-x-ray", "new_test_images", "annotations", annot_name), 'w', encoding='utf-8') as f:
-        json.dump(json_dict, f, ensure_ascii=False, indent=4)
-
-
-def save_model(model, name):
-    """Save the state of the model"""
-    folder = os.path.join(os.curdir, "weights")
-    path = os.path.join(folder, name + ".pth")
-    torch.save(model.state_dict(), path)
 
 def save_fig(train_loss, val_loss, f1_train=None, f1_val=None,
              exp_name=None, meas="F1-score"):
@@ -324,3 +161,37 @@ def save_fig(train_loss, val_loss, f1_train=None, f1_val=None,
     f.savefig(fname)
 
     return
+
+def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename):
+    # Assuming you have the predicted labels and true labels as numpy arrays
+
+    # Convert tensors to numpy arrays
+    predicted_labels = predicted_labels.numpy()
+    true_labels = true_labels.numpy()
+
+    # Create confusion matrix
+    cm = confusion_matrix(true_labels, predicted_labels)
+
+    # Plot confusion matrix
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title('Confusion Matrix')
+    plt.colorbar()
+    tick_marks = range(len(class_labels))
+    plt.xticks(tick_marks, class_labels, rotation=45)
+    plt.yticks(tick_marks, class_labels)
+
+    # Fill the matrix with values and labels
+    thresh = cm.max() / 2.0
+    for i in range(len(class_labels)):
+        for j in range(len(class_labels)):
+            plt.text(j, i, format(cm[i, j], 'd'), ha='center', va='center',
+                    color='white' if cm[i, j] > thresh else 'black')
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+    # Save the confusion matrix as an image
+    plt.savefig(filename + 'conf.png')
+
+    # Show the confusion matrix
+    plt.show()

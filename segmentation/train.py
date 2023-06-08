@@ -1,15 +1,15 @@
 import os
 import sys
 import torch
-from networks.create_model import create_classification_model
+from networks.create_model import create_segmentation_model
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from base_classses import Trainer
-from metrics import ClassificationMeter
+from metrics import SegmentationMeter
 
-class ClassificationTrainer(Trainer):
+class SegmentationTrainer(Trainer):
     def model_factory(self):
-        self.model = create_classification_model(self.network, self.device, self.num_classes)
+        self.model = create_segmentation_model(self.network, self.device, self.num_classes)
     
     def init_metrics(self):
         super().init_metrics()
@@ -17,7 +17,7 @@ class ClassificationTrainer(Trainer):
         self.val_f1_list = []
 
     def task_metrics(self):
-        return ClassificationMeter(self.classes, self.savename)
+        return SegmentationMeter(self.classes, self.savename)
     
     def print_metrics(self):
         accuracy = self.metrics['accuracy']

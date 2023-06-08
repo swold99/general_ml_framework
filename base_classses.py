@@ -20,6 +20,7 @@ class Trainer():
         self.data_folder = data_folder
         self.learning_rate = params['learning_rate']
         self.device = params['device']
+        self.classes = params['classes']
         self.num_workers = params['num_workers']
         self.batch_size = params['batch_size']
         self.num_epochs = params['num_epochs']

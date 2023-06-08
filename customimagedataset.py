@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 from PIL import Image
 from csv import writer, reader
 from io import StringIO
@@ -10,8 +10,14 @@ from pathlib import Path
 
 def create_dataset(use_datasets, quicktest, phase, transform):
     root = os.path.join(str(Path.home()), 'Documents', 'datasets')
+    dataset_list = []
     if 'cifar10' in use_datasets:
-        dataset = torchvision.datasets.CIFAR10(root=root, train=('train' in phase), transform=transform, download=True)
+        dataset_list.append(torchvision.datasets.CIFAR10(root=root, train=('train' in phase), transform=transform, download=True))
+    
+    if 'vocseg' in use_datasets:
+        dataset_list.append(torchvision.datasets.VOCSegmentation(root=root, rain=('train' in phase), transform=transform, download=True))
+
+    dataset = ConcatDataset(dataset_list)
     return dataset
 
 class CustomImageDataset(Dataset):

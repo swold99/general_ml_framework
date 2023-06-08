@@ -1,3 +1,5 @@
 weights/*
 *.pyc
 *.pth
+playground*
+*.png

@@ -13,16 +13,13 @@ class Standardize(object):
         pass
 
     def __call__(self, img):
-        fname = img[1]
-        img = img[0]
-
         # Get mean and std for non-air pixels
         mean, std = torch.std_mean(img)
 
         # Standardize image
         img = (img - mean)/std
 
-        return (img, fname)
+        return img
 
 
 class MinMaxScaler(object):
@@ -31,8 +28,6 @@ class MinMaxScaler(object):
         pass
 
     def __call__(self, img):
-        fname = img[1]
-        img = img[0]
         # Get mean and std for non-air pixels
         max_val = torch.max(img)
         min_val = torch.min(img)
@@ -40,25 +35,13 @@ class MinMaxScaler(object):
         # Standardize image
         img = (img - min_val)/(max_val - min_val)
 
-        return (img, fname)
-
-class IntensitySpread(object):
-    def __init__(self, contrast_factor = 0.5):
-        self.contrast_factor = contrast_factor
-
-    def __call__(self, img):
-        fname = img[1]
-        img = img[0]
-        # Increases contrast where intensity is lower. Contrast factor 0.5 gives pretty good contrast imo
-        return (torch.log(1 + pow(img, self.contrast_factor)*(math.e-1)), fname)
-
+        return img
 
 class Gray2RGB(object):
     def __init__(self):
         pass
 
     def __call__(self, img):
-        img = img[0]
         return img.expand(3, -1, -1)
 
 class ResizeGray(object):
@@ -66,7 +49,6 @@ class ResizeGray(object):
         self.size = size
 
     def __call__(self, img):
-        img = img[0]
         img = img.expand(1, 1, -1, -1)
         real_resize = transforms.Resize(self.size)
         return real_resize(img)
@@ -78,8 +60,6 @@ class HistogramEqualization(object):
         self.tileGridSize = transform_params['tile_grid_size']
 
     def __call__(self, img):
-        fname = img[1]
-        img = img[0]
         # Performs histogram equalization. Do not know how to compose it into a single transform
         img = img.numpy()
         img = (img*(2**16-1)).astype('uint16')
@@ -87,21 +67,15 @@ class HistogramEqualization(object):
         cl1 = clahe.apply(img)
         img = cl1.astype('float32')
         img = torch.from_numpy(img)
-        tsfrm2 = transforms.Compose([MinMaxScaler(), IntensitySpread(contrast_factor=self.contrast_factor)])
-        img = tsfrm2((img, fname))
+        tsfrm2 = MinMaxScaler()
+        img = tsfrm2(img)
         return img
 
 
 def compose_transforms(transform_params):
     #Composes all wanted transforms into a single transform.
-
+    trivial_augment = transform_params['trivial_augment']
     tsfrm = transforms.Compose([transforms.ToTensor()])
-
+    if trivial_augment:
+        tsfrm = transforms.Compose([tsfrm, transforms.TrivialAugmentWide()])
     return tsfrm
-
-
-
-
-
-
-

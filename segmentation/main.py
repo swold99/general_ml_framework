@@ -1,10 +1,11 @@
+from segmentation.test import SegmentationEvaluator
+from segmentation.train import SegmentationTrainer
+from tqdm import tqdm
+import torch
 import os
 from pprint import pprint
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import torch
-from classification.train import ClassificationTrainer
-from classification.test import ClassificationEvaluator
 
 
 def main():
@@ -18,7 +19,7 @@ def main():
     data_folders['test'] = None
     data_folders['inferece'] = "inference_demo"
 
-    experiment_name= "exp1"
+    experiment_name = "exp1"
 
     default_im_size = (512, 1024)
     downsample_factor = 1
@@ -35,18 +36,23 @@ def main():
     if 0:
         only_test(experiment_name, data_folders, params, transform_params)
 
+
 def train_and_test(experiment_name, data_folders, params, transform_params):
 
-    model_trainer = ClassificationTrainer(experiment_name, data_folders, params, transform_params)
+    model_trainer = SegmentationTrainer(
+        experiment_name, data_folders, params, transform_params)
     model_trainer.train_loop()
-    model_evaluator = ClassificationEvaluator(experiment_name, data_folders, params, transform_params)
+    model_evaluator = SegmentationEvaluator(
+        experiment_name, data_folders, params, transform_params)
     metrics = model_evaluator.test_loop()
     pprint(metrics)
     return
 
+
 def only_test(model_name, data_folders, params, transform_params):
 
-    model_evaluator = ClassificationEvaluator(model_name, data_folders, params, transform_params)
+    model_evaluator = SegmentationEvaluator(
+        model_name, data_folders, params, transform_params)
     metrics = model_evaluator.test_loop()
     pprint(metrics)
     return
@@ -57,13 +63,15 @@ def get_default_params():
 
     # General params
     params['im_size'] = (512, 1024)
-    params['classes'] = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-    params['use_cuda'] = torch.cuda.is_available() # use gpu
+    params['classes'] = ["aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
+                         "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
+                         "sheep", "person"]
+    params['use_cuda'] = torch.cuda.is_available()  # use gpu
     params['device'] = "cuda" if params['use_cuda'] else 'cpu'
     params['num_workers'] = 4
     params['num_classes'] = len(params['classes'])
     params['quicktest'] = True
-    params['use_datasets'] = ['cifar10']
+    params['use_datasets'] = ['vocseg']
 
     # Train params
     params['network'] = "resnet"
@@ -77,11 +85,11 @@ def get_default_params():
     params['optim_type'] = 'sgd'
     params['loss_fn'] = 'cross_entropy'
     params['learning_rate'] = 0.01
-    params['momentum'] = 0.1 # momentum term
-    params['nesterov'] = True # use nesterov trick in optimizer
+    params['momentum'] = 0.1  # momentum term
+    params['nesterov'] = True  # use nesterov trick in optimizer
     params['schedule_type'] = 'step'
     params['scheduler_step_size'] = torch.max(1, int(0.1*params['num_epochs']))
-    params['lr_gamma'] = 0.1 # learning rate decay
+    params['lr_gamma'] = 0.1  # learning rate decay
     return params
 
 
