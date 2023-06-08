@@ -95,12 +95,7 @@ class HistogramEqualization(object):
 def compose_transforms(transform_params):
     #Composes all wanted transforms into a single transform.
 
-    RGB = transform_params['RGB']
-    standardization = transform_params['standardization']
-    resize = transform_params['resize']
-    contrast_factor = transform_params['contrast_factor']
-
-    tsfrm = transforms.Compose([])
+    tsfrm = transforms.Compose([transforms.ToTensor()])
 
     return tsfrm
 

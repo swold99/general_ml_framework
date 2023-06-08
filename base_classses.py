@@ -27,10 +27,12 @@ class Trainer():
         self.network = params['network']
         self.show_val_imgs = params['show_val_imgs']
         self.show_test_imgs = params['show_test_imgs']
+        self.num_classes = params['num_classes']
+        self.quicktest = params['quicktest']
         self.model_factory()
         self.optim_factory(params)
         self.loss_factory(params)
-        self.tsfrm = compose_transforms(transform_params=transform_params)
+        self.transform = compose_transforms(transform_params=transform_params)
         self.dataloader_factory(params)
         self.init_metrics()
 
@@ -52,7 +54,7 @@ class Trainer():
             raise Exception('Optimizer not implemented')
 
         if schedule_type is not None:
-            if "step" in self.schedule_type:
+            if "step" in schedule_type:
                 self.scheduler = lr_scheduler.StepLR(
                     self.optimizer, step_size=step_size, gamma=lr_gamma)
             else:
@@ -64,10 +66,10 @@ class Trainer():
         if "cross_entropy" in loss_fn:
             self.objective = nn.CrossEntropyLoss()
 
-    def dataloader_factory(self, params, transform_params):
+    def dataloader_factory(self, params):
         self.phases = ['train', 'val']
         image_datasets = {phase: create_dataset(params['use_datasets'], params['quicktest'],
-                                                phase, transform_params) for phase in self.phases}
+                                                phase, self.transform) for phase in self.phases}
         self.dataloaders = {phase: torch.utils.data.DataLoader(
             image_datasets[phase], batch_size=params['batch_size'], shuffle=True,
             num_workers=params['num_workers']) for phase in self.phases}
@@ -113,12 +115,13 @@ class Trainer():
 
 
     def train_one_epoch(self, epoch):
-        self.metrics = Meter()
+        self.metrics = self.task_metrics()
         self.losses = Meter()
         prog_bar = tqdm(self.dataloaders['train'])
+        self.model.train()
 
         for batch_idx, item in enumerate(prog_bar):
-            inputs, targets, fnames = item
+            inputs, targets = item
 
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
@@ -129,7 +132,7 @@ class Trainer():
                 outputs = self.model(inputs)
                 preds = self.process_model_out(outputs)
 
-                loss = self.objective(preds, targets)
+                loss = self.objective(outputs, targets)
                 loss.backward()
                 self.optimizer.step()
 
@@ -147,9 +150,10 @@ class Trainer():
         self.metrics = self.task_metrics()
         self.losses = Meter()
         prog_bar = tqdm(self.dataloaders['val'])
+        self.model.eval()
 
         for batch_idx, item in enumerate(prog_bar):
-            inputs, targets, fnames = item
+            inputs, targets = item
 
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
@@ -186,7 +190,7 @@ class Trainer():
                   ' epochs. Stopping training.')
             self.stop_training = True
 
-    def process_model_out(outputs):
+    def process_model_out(self, outputs):
         return outputs
     
     def show_images(self, inputs, targets):
