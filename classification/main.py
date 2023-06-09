@@ -80,7 +80,7 @@ def get_default_params():
     params['momentum'] = 0.1 # momentum term
     params['nesterov'] = True # use nesterov trick in optimizer
     params['schedule_type'] = 'step'
-    params['scheduler_step_size'] = torch.max(1, int(0.1*params['num_epochs']))
+    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.1*params['num_epochs'])]))
     params['lr_gamma'] = 0.1 # learning rate decay
     return params
 
@@ -88,7 +88,7 @@ def get_default_params():
 def get_default_transform_params(im_size):
     transform_params = {}
     transform_params['trivial_augment'] = True
-
+    transform_params['resize'] = im_size
     return transform_params
 
 

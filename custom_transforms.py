@@ -75,7 +75,11 @@ class HistogramEqualization(object):
 def compose_transforms(transform_params):
     #Composes all wanted transforms into a single transform.
     trivial_augment = transform_params['trivial_augment']
+    resize = transform_params['resize']
     tsfrm = transforms.Compose([transforms.ToTensor()])
+
+    if resize is not None:
+        tsfrm = transforms.Compose([tsfrm, transforms.Resize(resize)])
     if trivial_augment:
         tsfrm = transforms.Compose([tsfrm, transforms.TrivialAugmentWide()])
     return tsfrm

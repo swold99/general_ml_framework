@@ -15,7 +15,7 @@ def create_dataset(use_datasets, quicktest, phase, transform):
         dataset_list.append(torchvision.datasets.CIFAR10(root=root, train=('train' in phase), transform=transform, download=True))
     
     if 'vocseg' in use_datasets:
-        dataset_list.append(torchvision.datasets.VOCSegmentation(root=root, rain=('train' in phase), transform=transform, download=True))
+        dataset_list.append(torchvision.datasets.VOCSegmentation(root=root, image_set=phase, transform=transform, target_transform=transform, download=True))
 
     dataset = ConcatDataset(dataset_list)
     return dataset

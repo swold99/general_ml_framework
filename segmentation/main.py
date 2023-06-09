@@ -1,11 +1,14 @@
+import os
+import sys
+from pprint import pprint
+
+import torch
+from tqdm import tqdm
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from segmentation.test import SegmentationEvaluator
 from segmentation.train import SegmentationTrainer
-from tqdm import tqdm
-import torch
-import os
-from pprint import pprint
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
@@ -21,7 +24,7 @@ def main():
 
     experiment_name = "exp1"
 
-    default_im_size = (512, 1024)
+    default_im_size = (256, 256)
     downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
@@ -62,7 +65,7 @@ def get_default_params():
     params = {}
 
     # General params
-    params['im_size'] = (512, 1024)
+    params['im_size'] = (256, 256)
     params['classes'] = ["aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
                          "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
                          "sheep", "person"]
@@ -74,7 +77,7 @@ def get_default_params():
     params['use_datasets'] = ['vocseg']
 
     # Train params
-    params['network'] = "resnet"
+    params['network'] = "unet"
     params['show_val_imgs'] = True
     params['show_test_imgs'] = True
     params['num_epochs'] = 5
@@ -88,14 +91,15 @@ def get_default_params():
     params['momentum'] = 0.1  # momentum term
     params['nesterov'] = True  # use nesterov trick in optimizer
     params['schedule_type'] = 'step'
-    params['scheduler_step_size'] = torch.max(1, int(0.1*params['num_epochs']))
+    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.1*params['num_epochs'])]))
     params['lr_gamma'] = 0.1  # learning rate decay
     return params
 
 
 def get_default_transform_params(im_size):
     transform_params = {}
-    transform_params['trivial_augment'] = True
+    transform_params['trivial_augment'] = False
+    transform_params['resize'] = im_size
 
     return transform_params
 

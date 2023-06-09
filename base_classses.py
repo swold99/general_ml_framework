@@ -101,7 +101,8 @@ class Trainer():
                     self.val_one_epoch(epoch)
 
         time_elapsed = time.time() - since
-        print(f'Training took {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+        print(
+            f'Training took {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
 
         # load best model weights
         self.model.load_state_dict(self.best_model_wts)
@@ -110,10 +111,10 @@ class Trainer():
         save_model(self.model, self.savename)
 
         # Save loss and f1-curves
-        save_fig(self.train_loss_list, self.val_loss_list, filename=self.savename)
+        save_fig(self.train_loss_list, self.val_loss_list,
+                 filename=self.savename)
 
         return self.model, self.best_epoch, self.best_loss  # , best_acc
-
 
     def train_one_epoch(self, epoch):
         self.metrics = self.task_metrics()
@@ -125,7 +126,7 @@ class Trainer():
             inputs, targets = item
 
             inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
+            targets = targets.to(self.device).squeeze(1)
 
             self.optimizer.zero_grad(set_to_none=True)
 
@@ -193,14 +194,14 @@ class Trainer():
 
     def process_model_out(self, outputs):
         return outputs
-    
+
     def show_images(self, inputs, targets):
         if targets.shape[1] == 3:
             for i in range(inputs.shape[0]):
                 imgs = [inputs[i, ...], targets[i, ...]]
-                plt.figure(figsize=(100,100))
+                plt.figure(figsize=(100, 100))
                 for j in range(2):
-                    plt.subplot(1,2, j+1)
+                    plt.subplot(1, 2, j+1)
                     plt.imshow(imgs[j])
                 plt.show()
 
@@ -209,7 +210,6 @@ class Trainer():
 
     def print_metrics(self):
         pass
-
 
 
 class Evaluator(Trainer):
@@ -226,11 +226,10 @@ class Evaluator(Trainer):
 
     def dataloader_factory(self, params, transform_params):
         image_dataset = create_dataset(params['use_datasets'], params['quicktest'],
-                                                'test', transform_params)
+                                       'test', transform_params)
         self.dataloader = torch.utils.data.DataLoader(
             image_dataset, batch_size=params['batch_size'], shuffle=True,
             num_workers=params['num_workers'])
-        
 
     def test_loop(self):
         self.model.eval()
@@ -255,9 +254,7 @@ class Evaluator(Trainer):
             self.metrics.update(preds, targets)
 
         metric_dict = self.metrics.get_final_metrics()
-        print("Average inference time: ", torch.mean(torch.tensor(times)/self.batch_size).item(), "s")
-
+        print("Average inference time: ", torch.mean(
+            torch.tensor(times)/self.batch_size).item(), "s")
 
         return metric_dict
-
-

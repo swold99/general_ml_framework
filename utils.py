@@ -26,6 +26,23 @@ def collate_fn(batch):
     # Really useful function
     return tuple(zip(*batch))
 
+def custom_collate_fn(batch):
+    # Find the maximum height and width in the batch
+    max_height = max([img.size(1) for img, _ in batch])
+    max_width = max([img.size(2) for img, _ in batch])
+
+    stacked_images = []
+    stacked_targets = []
+    for img, target in batch:
+        # Pad the image to match the maximum height and width
+        padded_img = torch.nn.functional.pad(img, (0, max_width - img.size(2), 0, max_height - img.size(1)))
+        stacked_images.append(padded_img)
+        stacked_targets.append(target)
+
+    stacked_images = torch.stack(stacked_images)  # Stack the images along a new batch dimension
+
+    return stacked_images, stacked_targets
+
 def move_to(obj, device):
     # Move all items of list or dicts to specified device
 

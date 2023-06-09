@@ -21,7 +21,12 @@ class SegmentationTrainer(Trainer):
     
     def print_metrics(self):
         accuracy = self.metrics['accuracy']
-        print(f'accuracy: {accuracy:.4f}')
+        precision = self.metrics['mAP']
+        recall = self.metrics['mAR']
+        f1 = self.metrics['mAF1']
+        mIoU = self.metrics['mIoU']
+        print(f'accuracy: {accuracy:.4f}, precision: {precision:.4f}, ' + 
+              f'recall: {recall:.4f}, f1-score: {f1:.4f}, mIoU: {mIoU:.4f},')
 
     def process_model_out(self, outputs):
         return torch.argmax(outputs, axis=1)

@@ -1,14 +1,14 @@
 from base_classses import Trainer, Evaluator
-from metrics import ClassificationMeter
+from metrics import SegmentationMeter
 from utils import load_model_state
-from networks.create_model import create_classification_model
+from networks.create_model import create_segmentation_model
 
 
-class ClassificationEvaluator(Evaluator):
+class SegmentationEvaluator(Evaluator):
     def task_metrics(self):
-        return ClassificationMeter(self.classes, self.savename, eval=True)
+        return SegmentationMeter(self.classes, self.savename, eval=True)
 
     def model_factory(self):
-        model = create_classification_model(self.network, self.device, self.num_classes)
+        model = create_segmentation_model(self.network, self.device, self.num_classes)
         name = self.savename + ".pth"
         self.model = load_model_state(model, name)
