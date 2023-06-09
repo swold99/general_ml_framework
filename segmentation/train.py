@@ -4,7 +4,7 @@ import torch
 from networks.create_model import create_segmentation_model
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from base_classses import Trainer
+from base_classes import Trainer
 from metrics import SegmentationMeter
 
 class SegmentationTrainer(Trainer):
@@ -30,5 +30,8 @@ class SegmentationTrainer(Trainer):
 
     def process_model_out(self, outputs):
         return torch.argmax(outputs, axis=1)
+    
+    def preprocess_data(self, inputs, targets):
+        return inputs.to(self.device), targets.to(self.device).squeeze(1).long()
 
     

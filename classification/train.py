@@ -4,7 +4,7 @@ import torch
 from networks.create_model import create_classification_model
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from base_classses import Trainer
+from base_classes import Trainer
 from metrics import ClassificationMeter
 
 class ClassificationTrainer(Trainer):

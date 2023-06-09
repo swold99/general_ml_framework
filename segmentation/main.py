@@ -66,9 +66,9 @@ def get_default_params():
 
     # General params
     params['im_size'] = (256, 256)
-    params['classes'] = ["aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
+    params['classes'] = ["background", "aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
                          "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
-                         "sheep", "person"]
+                         "sheep", "person", "boundary"]
     params['use_cuda'] = torch.cuda.is_available()  # use gpu
     params['device'] = "cuda" if params['use_cuda'] else 'cpu'
     params['num_workers'] = 4

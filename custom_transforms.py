@@ -3,6 +3,7 @@ import math
 import cv2
 import torch
 from torchvision import transforms
+import numpy as np
 
 
 class Standardize(object):
@@ -70,16 +71,26 @@ class HistogramEqualization(object):
         tsfrm2 = MinMaxScaler()
         img = tsfrm2(img)
         return img
+    
+class ToTensorWithoutScaling(object):
+    def __call__(self, img):
+        mask = torch.from_numpy(np.array(img)).unsqueeze(0)
+        mask[mask==255] = 21
+        return mask
 
 
 def compose_transforms(transform_params):
     #Composes all wanted transforms into a single transform.
     trivial_augment = transform_params['trivial_augment']
     resize = transform_params['resize']
-    tsfrm = transforms.Compose([transforms.ToTensor()])
+    input_tsfrm = transforms.Compose([transforms.ToTensor()])
+    target_tsfrm = transforms.Compose([ToTensorWithoutScaling()])
 
     if resize is not None:
-        tsfrm = transforms.Compose([tsfrm, transforms.Resize(resize)])
+        input_tsfrm = transforms.Compose([input_tsfrm, transforms.Resize(resize)])
+        target_tsfrm = transforms.Compose([target_tsfrm, transforms.Resize(resize)])
     if trivial_augment:
-        tsfrm = transforms.Compose([tsfrm, transforms.TrivialAugmentWide()])
+        input_tsfrm = transforms.Compose([input_tsfrm, transforms.TrivialAugmentWide()])
+
+    tsfrm = {'input': input_tsfrm, 'target': target_tsfrm}
     return tsfrm

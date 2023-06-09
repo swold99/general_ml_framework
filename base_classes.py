@@ -125,8 +125,7 @@ class Trainer():
         for batch_idx, item in enumerate(prog_bar):
             inputs, targets = item
 
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device).squeeze(1)
+            inputs, targets = self.preprocess_data(inputs, targets)
 
             self.optimizer.zero_grad(set_to_none=True)
 
@@ -192,6 +191,9 @@ class Trainer():
                   ' epochs. Stopping training.')
             self.stop_training = True
 
+    def preprocess_data(self, inputs, targets):
+        return inputs.to(self.device), targets.to(self.device)
+
     def process_model_out(self, outputs):
         return outputs
 
@@ -241,7 +243,7 @@ class Evaluator(Trainer):
         for batch_idx, item in enumerate(prog_bar):
             inputs, targets, fnames = item
 
-            inputs = inputs.to(self.device)
+            inputs, targets = self.preprocess_data(inputs, targets)
 
             t1 = time()
             outputs = self.model(inputs)

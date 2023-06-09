@@ -1,4 +1,4 @@
-from base_classses import Trainer, Evaluator
+from base_classes import Trainer, Evaluator
 from metrics import SegmentationMeter
 from utils import load_model_state
 from networks.create_model import create_segmentation_model
@@ -12,3 +12,6 @@ class SegmentationEvaluator(Evaluator):
         model = create_segmentation_model(self.network, self.device, self.num_classes)
         name = self.savename + ".pth"
         self.model = load_model_state(model, name)
+
+    def preprocess_data(self, inputs, targets):
+        return inputs.to(self.device), targets.to(self.device).squeeze(1)

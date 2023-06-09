@@ -60,6 +60,7 @@ class ClassificationMeter():
 class SegmentationMeter():
     def __init__(self, classes, filename, eval=False):
         self.correct = 0
+        self.total = 0
         self.avg_accuracy = 0
         self.eval = eval
         self.classes = classes
@@ -98,12 +99,13 @@ class SegmentationMeter():
                 self.recall[obj_class] = pred_class * \
                     targets_class / torch.sum(targets_class)
                 self.iou[obj_class] = iou
-                self.first = False
             else:
                 self.precision[obj_class] += pred_class * \
                     targets_class / torch.sum(pred_class)
                 self.recall[obj_class] += pred_class * \
                     targets_class / torch.sum(targets_class)
+                
+        self.first = False
 
     def get_final_metrics(self):
         metric_dict = {}

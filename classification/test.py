@@ -1,4 +1,4 @@
-from base_classses import Trainer, Evaluator
+from base_classes import Trainer, Evaluator
 from metrics import ClassificationMeter
 from utils import load_model_state
 from networks.create_model import create_classification_model

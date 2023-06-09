@@ -8,17 +8,24 @@ from io import StringIO
 import torchvision
 from pathlib import Path
 
+
 def create_dataset(use_datasets, quicktest, phase, transform):
     root = os.path.join(str(Path.home()), 'Documents', 'datasets')
     dataset_list = []
+    input_transform = transform['input']
+    target_transform = transform['target']
     if 'cifar10' in use_datasets:
-        dataset_list.append(torchvision.datasets.CIFAR10(root=root, train=('train' in phase), transform=transform, download=True))
-    
+        dataset_list.append(torchvision.datasets.CIFAR10(root=root, train=(
+            'train' in phase), transform=input_transform, download=True))
+
     if 'vocseg' in use_datasets:
-        dataset_list.append(torchvision.datasets.VOCSegmentation(root=root, image_set=phase, transform=transform, target_transform=transform, download=True))
+        dataset_list.append(torchvision.datasets.VOCSegmentation(
+            root=root, image_set=phase, transform=input_transform,
+            target_transform=target_transform, download=True))
 
     dataset = ConcatDataset(dataset_list)
     return dataset
+
 
 class CustomImageDataset(Dataset):
     # Template for creating custom dataset
@@ -39,6 +46,7 @@ class CustomImageDataset(Dataset):
             image = self.transform((image, img_path))
         return image, label, img_path
 
+
 def create_labels_frame(self):
     df = pd.DataFrame()
     output = StringIO()
@@ -49,8 +57,8 @@ def create_labels_frame(self):
     output.seek(0)
     df = pd.read_csv(output, dtype=str)
     df = df.set_axis(["filename"], axis="columns",
-                        copy=False)
-    
+                     copy=False)
+
     if self.quicktest:
         df = df[:int(0.1*len(df))]
     return df
