@@ -63,6 +63,7 @@ def only_test(model_name, data_folders, params, transform_params):
 
 def get_default_params():
     params = {}
+    params['task'] = 'segmentation' # DO NOT CHANGE
 
     # General params
     params['im_size'] = (256, 256)

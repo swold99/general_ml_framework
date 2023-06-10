@@ -17,6 +17,7 @@ from utils import save_model, save_fig
 class Trainer():
     def __init__(self, savename, data_folder, params, transform_params) -> None:
         self.savename = savename
+        self.task = params['task']
         self.data_folder = data_folder
         self.learning_rate = params['learning_rate']
         self.device = params['device']
@@ -33,7 +34,8 @@ class Trainer():
         self.model_factory()
         self.optim_factory(params)
         self.loss_factory(params)
-        self.transform = compose_transforms(transform_params=transform_params)
+        space_augment = True if self.task == 'classification' else False
+        self.transform = compose_transforms(transform_params=transform_params, label_is_space_invariant=space_augment)
         self.dataloader_factory(params)
         self.init_metrics()
 
@@ -137,6 +139,8 @@ class Trainer():
                 loss.backward()
                 self.optimizer.step()
 
+            if 0: self.show_images(inputs, targets, preds)
+
             self.losses.update(loss.item())
             self.metrics.update(preds, targets)
 
@@ -166,7 +170,7 @@ class Trainer():
                 loss = self.objective(preds, targets)
 
             if self.show_val_imgs:
-                self.show_images(preds, targets)
+                self.show_images(inputs, targets, preds)
 
             self.losses.update(loss.item())
             self.metrics.update(preds, targets)
@@ -198,14 +202,7 @@ class Trainer():
         return outputs
 
     def show_images(self, inputs, targets):
-        if targets.shape[1] == 3:
-            for i in range(inputs.shape[0]):
-                imgs = [inputs[i, ...], targets[i, ...]]
-                plt.figure(figsize=(100, 100))
-                for j in range(2):
-                    plt.subplot(1, 2, j+1)
-                    plt.imshow(imgs[j])
-                plt.show()
+        pass
 
     def task_metrics(self):
         pass

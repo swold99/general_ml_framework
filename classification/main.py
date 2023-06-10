@@ -20,7 +20,7 @@ def main():
 
     experiment_name= "exp1"
 
-    default_im_size = (512, 1024)
+    default_im_size = (64, 64)
     downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
@@ -54,9 +54,9 @@ def only_test(model_name, data_folders, params, transform_params):
 
 def get_default_params():
     params = {}
+    params['task'] = 'classification' # DO NOT CHANGE
 
     # General params
-    params['im_size'] = (512, 1024)
     params['classes'] = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
     params['use_cuda'] = torch.cuda.is_available() # use gpu
     params['device'] = "cuda" if params['use_cuda'] else 'cpu'

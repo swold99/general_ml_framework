@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from base_classes import Trainer
 from metrics import ClassificationMeter
+from utils import show_classification_imgs
 
 class ClassificationTrainer(Trainer):
     def model_factory(self):
@@ -25,5 +26,7 @@ class ClassificationTrainer(Trainer):
 
     def process_model_out(self, outputs):
         return torch.argmax(outputs, axis=1)
-
     
+    def show_images(self, inputs, targets, preds):
+        show_classification_imgs(inputs, targets, preds)
+

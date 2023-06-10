@@ -212,3 +212,36 @@ def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename)
 
     # Show the confusion matrix
     plt.show()
+
+def show_classification_imgs(inputs, targets, preds):
+    for i in range(inputs.shape[0]):
+        plt.imshow(inputs[i, ...].permute(1,2,0))
+        plt.title(f'Label: {targets[i]}, Prediction: {preds[i]}')
+        plt.show()
+
+def show_segmentation_imgs(inputs, targets, preds, colormap):
+    titles = ['Input', 'Label', 'Prediction']
+    for i in range(inputs.shape[0]):
+        target_color = apply_colormap(targets[i, ...], colormap)
+        pred_color = apply_colormap(preds[i, ...], colormap)
+        imgs = [inputs[i, ...].permute(1,2,0), target_color, pred_color]
+        # Create subplots with 1 row and 3 columns
+        fig, axs = plt.subplots(1, 3)
+        for j in range(3):
+            # Plot your images and set titles
+            axs[j].imshow(imgs[j])
+            axs[j].set_title(titles[j])
+
+        # Adjust the layout to avoid overlapping titles
+        plt.tight_layout()
+        plt.show()
+        
+def show_detection_imgs(inputs, targets, preds):
+    pass
+
+def apply_colormap(mask, colormap):
+    rgb_image = colormap(mask)[:, :, :3] * 255
+    rgb_image = rgb_image.astype(np.uint8)
+    return rgb_image
+
+    

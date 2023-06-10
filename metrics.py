@@ -28,11 +28,12 @@ class Meter:
 class ClassificationMeter():
     def __init__(self, classes, filename, eval=False):
         self.correct = 0
+        self.total = 0
         self.avg_accuracy = 0
         self.eval = eval
         self.classes = classes
         self.filename = filename
-        if eval:
+        if self.eval:
             self.preds = []
             self.targets = []
 
@@ -45,7 +46,7 @@ class ClassificationMeter():
         self.correct += torch.sum(preds == targets)
         self.total += len(targets)
         self.avg_accuracy = self.correct / self.total
-        if eval:
+        if self.eval:
             self.preds.extend(preds.tolist())
             self.targets.extend(targets.tolist())
 
@@ -53,8 +54,9 @@ class ClassificationMeter():
         metric_dict = {}
         metric_dict['accuracy'] = self.avg_accuracy
         pprint(metric_dict)
-        plot_save_conf_matrix(self.preds, self.labels,
-                              self.classes, self.filename)
+        if eval:
+            plot_save_conf_matrix(self.preds, self.targets,
+                                  self.classes, self.filename)
 
 
 class SegmentationMeter():
@@ -104,7 +106,7 @@ class SegmentationMeter():
                     targets_class / torch.sum(pred_class)
                 self.recall[obj_class] += pred_class * \
                     targets_class / torch.sum(targets_class)
-                
+
         self.first = False
 
     def get_final_metrics(self):
