@@ -5,7 +5,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from custom_transforms import compose_transforms
-from customimagedataset import CustomImageDataset
+from create_dataset import CustomImageDataset
 
 
 def inference(model, image_name, params, transform_params):

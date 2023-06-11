@@ -8,7 +8,7 @@ from torch.optim import lr_scheduler
 import matplotlib.pyplot as plt
 
 from custom_transforms import compose_transforms
-from customimagedataset import create_dataset
+from create_dataset import create_dataset
 from networks import create_model
 from metrics import Meter
 from utils import save_model, save_fig
