@@ -17,7 +17,7 @@ def save_model(model, name):
 def load_model_state(model, name, local=True):
     """Loads the state of the model which is saved in *name*"""
     model.cuda()
-    state_dict = torch.load(os.path.join("models", name), map_location="cuda")
+    state_dict = torch.load(os.path.join("weights", name), map_location="cuda")
     model.load_state_dict(state_dict)
     model.eval()
     return model
@@ -179,15 +179,15 @@ def save_fig(train_loss, val_loss, f1_train=None, f1_val=None,
 
     return
 
-def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename):
+def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename, num_classes):
     # Assuming you have the predicted labels and true labels as numpy arrays
 
     # Convert tensors to numpy arrays
-    predicted_labels = predicted_labels.numpy()
-    true_labels = true_labels.numpy()
+    predicted_labels = torch.tensor(predicted_labels)
+    true_labels = torch.tensor(true_labels)
 
     # Create confusion matrix
-    cm = confusion_matrix(true_labels, predicted_labels)
+    cm = confusion_matrix(true_labels, predicted_labels, task='multiclass', num_classes=num_classes)
 
     # Plot confusion matrix
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
@@ -208,7 +208,7 @@ def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename)
     plt.xlabel('Predicted label')
 
     # Save the confusion matrix as an image
-    plt.savefig(filename + 'conf.png')
+    plt.savefig(os.path.join("conf_matrix", filename + 'conf.png'))
 
     # Show the confusion matrix
     plt.show()

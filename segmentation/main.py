@@ -79,10 +79,10 @@ def get_default_params():
 
     # Train params
     params['network'] = "unet"
-    params['show_val_imgs'] = True
-    params['show_test_imgs'] = True
-    params['num_epochs'] = 5
-    params['batch_size'] = 4
+    params['show_val_imgs'] = False
+    params['show_test_imgs'] = False
+    params['num_epochs'] = 20
+    params['batch_size'] = 16
     params['patience'] = 0.1 * params['num_epochs']
 
     # Optim params
@@ -92,7 +92,7 @@ def get_default_params():
     params['momentum'] = 0.1  # momentum term
     params['nesterov'] = True  # use nesterov trick in optimizer
     params['schedule_type'] = 'step'
-    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.1*params['num_epochs'])]))
+    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.5*params['num_epochs'])]))
     params['lr_gamma'] = 0.1  # learning rate decay
     return params
 

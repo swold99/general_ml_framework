@@ -20,12 +20,9 @@ class ClassificationTrainer(Trainer):
     def task_metrics(self):
         return ClassificationMeter(self.classes, self.savename)
     
-    def print_metrics(self):
-        accuracy = self.metrics['accuracy']
-        print(f'accuracy: {accuracy:.4f}')
 
-    def process_model_out(self, outputs):
-        return torch.argmax(outputs, axis=1)
+    def process_model_out(self, outputs, device):
+        return torch.argmax(outputs, axis=1).to(device)
     
     def show_images(self, inputs, targets, preds):
         show_classification_imgs(inputs, targets, preds)

@@ -269,9 +269,9 @@ def compose_transforms(transform_params, label_is_space_invariant=True):
 
     if resize is not None:
         input_tsfrm = transforms.Compose(
-            [input_tsfrm, transforms.Resize(resize)])
+            [input_tsfrm, transforms.Resize(resize, antialias=True)])
         target_tsfrm = transforms.Compose(
-            [target_tsfrm, transforms.Resize(resize)])
+            [target_tsfrm, transforms.Resize(resize, antialias=True)])
     if trivial_augment:
         input_tsfrm = transforms.Compose(
             [input_tsfrm, TrivialAugmentSWOLD(label_is_space_invariant=label_is_space_invariant)])

@@ -17,7 +17,6 @@ from utils import save_model, save_fig
 class Trainer():
     def __init__(self, savename, data_folder, params, transform_params) -> None:
         self.savename = savename
-        self.task = params['task']
         self.data_folder = data_folder
         self.learning_rate = params['learning_rate']
         self.device = params['device']
@@ -31,6 +30,7 @@ class Trainer():
         self.show_test_imgs = params['show_test_imgs']
         self.num_classes = params['num_classes']
         self.quicktest = params['quicktest']
+        self.task = params['task']
         self.model_factory()
         self.optim_factory(params)
         self.loss_factory(params)
@@ -38,6 +38,8 @@ class Trainer():
         self.transform = compose_transforms(transform_params=transform_params, label_is_space_invariant=space_augment)
         self.dataloader_factory(params)
         self.init_metrics()
+        self.metrics = self.task_metrics()
+        self.losses = Meter()
 
     def model_factory(self):
         pass
@@ -80,6 +82,8 @@ class Trainer():
     def init_metrics(self):
         self.train_loss_list = []
         self.val_loss_list = []
+        self.train_f1_list = []
+        self.val_f1_list = []
         self.waiting_for_improvement = 0
         self.stop_training = False
         self.best_loss = torch.inf
@@ -93,7 +97,7 @@ class Trainer():
                 return
 
             print(f'Epoch {epoch}/{self.num_epochs - 1}')
-            print(self.optimizer.param_groups[0]['lr'])
+            print("Learning rate: ", self.optimizer.param_groups[0]['lr'])
             print('-' * 10)
 
             for phase in self.phases:
@@ -102,7 +106,7 @@ class Trainer():
                 else:
                     self.val_one_epoch(epoch)
 
-        time_elapsed = time.time() - since
+        time_elapsed = time() - since
         print(
             f'Training took {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
 
@@ -113,14 +117,14 @@ class Trainer():
         save_model(self.model, self.savename)
 
         # Save loss and f1-curves
-        save_fig(self.train_loss_list, self.val_loss_list,
-                 filename=self.savename)
+        save_fig(self.train_loss_list, self.val_loss_list, f1_train=self.train_f1_list, f1_val=self.val_f1_list,
+                 exp_name=self.savename)
 
         return self.model, self.best_epoch, self.best_loss  # , best_acc
 
     def train_one_epoch(self, epoch):
-        self.metrics = self.task_metrics()
-        self.losses = Meter()
+        self.metrics.reset()
+        self.losses.reset()
         prog_bar = tqdm(self.dataloaders['train'])
         self.model.train()
 
@@ -133,23 +137,27 @@ class Trainer():
 
             with torch.set_grad_enabled(True):
                 outputs = self.model(inputs)
-                preds = self.process_model_out(outputs)
+                preds = self.process_model_out(outputs, device=self.device)
 
                 loss = self.objective(outputs, targets)
                 loss.backward()
                 self.optimizer.step()
+
+            inputs, targets, preds = inputs.cpu(), targets.cpu(), preds.cpu()
 
             if 0: self.show_images(inputs, targets, preds)
 
             self.losses.update(loss.item())
             self.metrics.update(preds, targets)
 
+        self.scheduler.step()
         desc = (f'Running loss: {round(self.losses.avg,5)}')
         prog_bar.set_description(desc)
         epoch_loss = self.losses.avg
         self.train_loss_list.append(epoch_loss)
         print(f'train Loss: {epoch_loss:.4f}')
-        self.print_metrics()
+        self.metric_dict = self.metrics.get_final_metrics()
+        self.train_f1_list.append(self.metric_dict['mAF1'])
 
     def val_one_epoch(self, epoch):
         self.metrics = self.task_metrics()
@@ -160,14 +168,15 @@ class Trainer():
         for batch_idx, item in enumerate(prog_bar):
             inputs, targets = item
 
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
+            inputs, targets = self.preprocess_data(inputs, targets)
 
             with torch.set_grad_enabled(False):
                 outputs = self.model(inputs)
-                preds = self.process_model_out(outputs)
+                preds = self.process_model_out(outputs, device=self.device)
 
-                loss = self.objective(preds, targets)
+                loss = self.objective(outputs, targets)
+
+            inputs, targets, preds = inputs.cpu(), targets.cpu(), preds.cpu()
 
             if self.show_val_imgs:
                 self.show_images(inputs, targets, preds)
@@ -180,7 +189,8 @@ class Trainer():
         epoch_loss = self.losses.avg
         self.val_loss_list.append(epoch_loss)
         print(f'validation Loss: {epoch_loss:.4f}')
-        self.print_metrics()
+        metric_dict = self.metrics.get_final_metrics()
+        self.val_f1_list.append(self.metric_dict['mAF1'])
 
         if epoch_loss < self.best_loss:
             self.waiting_for_improvement = 0
@@ -198,8 +208,8 @@ class Trainer():
     def preprocess_data(self, inputs, targets):
         return inputs.to(self.device), targets.to(self.device)
 
-    def process_model_out(self, outputs):
-        return outputs
+    def process_model_out(self, outputs, device):
+        return outputs.to(device)
 
     def show_images(self, inputs, targets):
         pass
@@ -219,26 +229,36 @@ class Evaluator(Trainer):
         self.num_workers = params['num_workers']
         self.batch_size = params['batch_size']
         self.network = params['network']
+        self.num_classes = params['num_classes']
+        self.task = params['task']
+        self.classes = params['classes']
+        self.show_val_imgs = params['show_val_imgs']
+        self.show_test_imgs = params['show_test_imgs']
         self.model_factory()
         self.tsfrm = compose_transforms(transform_params=transform_params)
-        self.dataloader_factory(params)
+        self.dataloader_factory(params, transform_params)
+        self.metrics = self.task_metrics()
+        self.losses = Meter()
 
     def dataloader_factory(self, params, transform_params):
         image_dataset = create_dataset(params['use_datasets'], params['quicktest'],
-                                       'test', transform_params)
+                                       'test', self.tsfrm)
         self.dataloader = torch.utils.data.DataLoader(
             image_dataset, batch_size=params['batch_size'], shuffle=True,
             num_workers=params['num_workers'])
 
+    def preprocess_data(self, inputs, targets):
+        return inputs.to(self.device), targets
+
     def test_loop(self):
         self.model.eval()
-        self.metrics = self.task_metrics()
-        self.losses = Meter()
+        self.metrics.reset()
+        self.losses.reset()
         prog_bar = tqdm(self.dataloader)
         times = []
 
         for batch_idx, item in enumerate(prog_bar):
-            inputs, targets, fnames = item
+            inputs, targets = item
 
             inputs, targets = self.preprocess_data(inputs, targets)
 
@@ -246,7 +266,7 @@ class Evaluator(Trainer):
             outputs = self.model(inputs)
             t2 = time()
             times.append(t2-t1)
-            preds = self.process_model_out(outputs).cpu()
+            preds = self.process_model_out(outputs, device='cpu')
             if self.show_test_imgs:
                 self.show_images(preds, targets)
 

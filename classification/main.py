@@ -29,10 +29,10 @@ def main():
 
     transform_params = get_default_transform_params(im_size)
 
-    if 1:
+    if 0:
         train_and_test(experiment_name, data_folders, params, transform_params)
 
-    if 0:
+    if 1:
         only_test(experiment_name, data_folders, params, transform_params)
 
 def train_and_test(experiment_name, data_folders, params, transform_params):
@@ -67,10 +67,10 @@ def get_default_params():
 
     # Train params
     params['network'] = "resnet"
-    params['show_val_imgs'] = True
-    params['show_test_imgs'] = True
-    params['num_epochs'] = 5
-    params['batch_size'] = 4
+    params['show_val_imgs'] = False
+    params['show_test_imgs'] = False
+    params['num_epochs'] = 2
+    params['batch_size'] = 32
     params['patience'] = 0.1 * params['num_epochs']
 
     # Optim params
@@ -80,8 +80,8 @@ def get_default_params():
     params['momentum'] = 0.1 # momentum term
     params['nesterov'] = True # use nesterov trick in optimizer
     params['schedule_type'] = 'step'
-    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.1*params['num_epochs'])]))
-    params['lr_gamma'] = 0.1 # learning rate decay
+    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.4*params['num_epochs'])]))
+    params['lr_gamma'] = 0.9 # learning rate decay
     return params
 
 
