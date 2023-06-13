@@ -10,7 +10,9 @@ from pathlib import Path
 
 
 def create_dataset(use_datasets, quicktest, phase, transform):
-    root = os.path.join(str(Path.home()), 'Documents', 'datasets')
+    root = os.path.join(os.path.dirname(os.getcwd()), 'datasets')
+    if not os.path.exists(root):
+        os.makedirs(root)
     dataset_list = []
     input_transform = transform['input']
     target_transform = transform['target']

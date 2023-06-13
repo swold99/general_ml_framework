@@ -1,14 +1,14 @@
+import argparse
 import os
 import sys
 from pprint import pprint
 
 import torch
-from tqdm import tqdm
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from segmentation.test import SegmentationEvaluator
 from segmentation.train import SegmentationTrainer
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
@@ -62,38 +62,70 @@ def only_test(model_name, data_folders, params, transform_params):
 
 
 def get_default_params():
-    params = {}
-    params['task'] = 'segmentation' # DO NOT CHANGE
+
+    # Create the argument parser
+    parser = argparse.ArgumentParser()
+
+    # Add arguments to the parser
+    parser.add_argument('--task', type=str,
+                        default='classification', help='Task')  # DO NOT CHANGE
 
     # General params
-    params['im_size'] = (256, 256)
-    params['classes'] = ["background", "aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
-                         "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
-                         "sheep", "person", "boundary"]
-    params['use_cuda'] = torch.cuda.is_available()  # use gpu
-    params['device'] = "cuda" if params['use_cuda'] else 'cpu'
-    params['num_workers'] = 4
-    params['num_classes'] = len(params['classes'])
-    params['quicktest'] = True
-    params['use_datasets'] = ['vocseg']
+    parser.add_argument('--classes', type=list, default=["background", "aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
+                                                         "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
+                                                         "sheep", "person", "boundary"], help='Classes')
+    parser.add_argument('--use_cuda', type=bool,
+                        default=torch.cuda.is_available(), help='Use GPU')
+    parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available()
+                        else 'cpu', help='Device (cuda or cpu)')
+    parser.add_argument('--num_workers', type=int,
+                        default=4, help='Number of workers')
+    parser.add_argument('--quicktest', type=bool,
+                        default=True, help='Quick test')
+    parser.add_argument('--use_datasets', type=list,
+                        default=['vocseg'], help='List of datasets')
 
     # Train params
-    params['network'] = "unet"
-    params['show_val_imgs'] = False
-    params['show_test_imgs'] = False
-    params['num_epochs'] = 20
-    params['batch_size'] = 16
-    params['patience'] = 0.1 * params['num_epochs']
+    parser.add_argument('--network', type=str,
+                        default="unet", help='Network type')
+    parser.add_argument('--show_val_imgs', type=bool,
+                        default=False, help='Show validation images')
+    parser.add_argument('--show_test_imgs', type=bool,
+                        default=False, help='Show test images')
+    parser.add_argument('--num_epochs', type=int,
+                        default=25, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
+    parser.add_argument('--patience', type=float, default=0.1, help='Patience')
 
     # Optim params
-    params['optim_type'] = 'sgd'
-    params['loss_fn'] = 'cross_entropy'
-    params['learning_rate'] = 0.01
-    params['momentum'] = 0.1  # momentum term
-    params['nesterov'] = True  # use nesterov trick in optimizer
-    params['schedule_type'] = 'step'
-    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.5*params['num_epochs'])]))
-    params['lr_gamma'] = 0.1  # learning rate decay
+    parser.add_argument('--optim_type', type=str,
+                        default='sgd', help='Optimizer type')
+    parser.add_argument('--loss_fn', type=str,
+                        default='cross_entropy', help='Loss function')
+    parser.add_argument('--learning_rate', type=float,
+                        default=0.01, help='Learning rate')
+    parser.add_argument('--momentum', type=float,
+                        default=0.1, help='Momentum term')
+    parser.add_argument('--nesterov', type=bool, default=True,
+                        help='Use Nesterov trick in optimizer')
+    parser.add_argument('--schedule_type', type=str,
+                        default='step', help='Scheduler type')
+    parser.add_argument('--scheduler_step_size', type=int,
+                        default=0.2, help='Scheduler step size')
+    parser.add_argument('--lr_gamma', type=float,
+                        default=0.5, help='Learning rate decay')
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Create the params dictionary
+    params = vars(args)
+
+    # Set number of classes and patience (in epochs)    params['num_classes'] = len(params['classes'])
+    params['patience'] = params['patience']*params['num_epochs']
+    params['scheduler_step_size'] = torch.max(torch.tensor(
+        [1, int(params['scheduler_step_size']*params['num_epochs'])]))
+
     return params
 
 
