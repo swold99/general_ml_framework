@@ -236,8 +236,49 @@ def show_segmentation_imgs(inputs, targets, preds, colormap):
         plt.tight_layout()
         plt.show()
         
-def show_detection_imgs(inputs, targets, preds):
-    pass
+def show_detection_imgs(inputs, preds, targets):
+    for i in range(len(inputs)):
+        pred_boxes, pred_labels, pred_scores = preds[i]['boxes'], preds[i]['labels'], preds[i]['scores']
+        target_boxes, target_labels = targets[i]['boxes'], targets[i]['labels']
+        spaces = []
+        for box in pred_boxes:
+            width = box[2]-box[0]
+            spaces.append(int(width/6))
+        pred_classes_and_scores = [" "*spaces[i] + "%s %.3f"  % (pred_labels[i].item(), pred_scores[i]) for i in range(len(pred_labels))]
+
+        for box in target_boxes:
+            width = box[2]-box[0]
+            spaces.append(int(width/6))
+        target_labels = [" "*spaces[i] + str(target_labels[i].item()) for i in range(len(target_labels))]
+        drawn_boxes = draw_bounding_boxes((inputs[i]*255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
+        drawn_boxes = draw_bounding_boxes(drawn_boxes, target_boxes, labels=target_labels, colors="red")#labels=label_classes, colors="red")
+        plt.imshow(drawn_boxes.permute(1,2,0))
+        plt.title('Predicted bounding boxes (blue) and ground truth bounding boxes (red)')
+        plt.show()
+
+
+
+
+
+def show_bounding_boxes(image, pred_boxes, true_boxes, pred_classes, label_classes, sample_fname, scores):
+    # Shows bounding boxes on image
+    spaces = []
+    for box in pred_boxes:
+        width = box[2]-box[0]
+        spaces.append(int(width/6))
+    pred_classes_and_scores = [" "*spaces[i] + "%s %.3f"  % (pred_classes[i], scores[i]) for i in range(len(pred_classes))]
+    drawn_boxes = draw_bounding_boxes((image*255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
+
+    if true_boxes is not None:
+        drawn_boxes = draw_bounding_boxes(drawn_boxes, true_boxes,  colors="red")#labels=label_classes, colors="red")
+    print(sample_fname)
+
+    if torch.numel(pred_boxes) == 0:
+        drawn_boxes = drawn_boxes.to('cpu')
+
+    
+    return
+    
 
 def apply_colormap(mask, colormap):
     rgb_image = colormap(mask)[:, :, :3] * 255

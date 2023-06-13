@@ -4,10 +4,10 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
-
+from torchvision import transforms
+from custom_transforms import ToTensorWithoutScaling, TrivialAugmentSWOLD
 import matplotlib.pyplot as plt
 
-from custom_transforms import compose_transforms
 from create_dataset import create_dataset
 from networks import create_model
 from metrics import Meter
@@ -18,6 +18,7 @@ class Trainer():
     def __init__(self, savename, data_folder, params, transform_params) -> None:
         self.savename = savename
         self.data_folder = data_folder
+        self.im_size = params['im_size']
         self.learning_rate = params['learning_rate']
         self.device = params['device']
         self.classes = params['classes']
@@ -35,7 +36,7 @@ class Trainer():
         self.optim_factory(params)
         self.loss_factory(params)
         space_augment = True if self.task == 'classification' else False
-        self.transform = compose_transforms(transform_params=transform_params, label_is_space_invariant=space_augment)
+        self.transform = self.compose_transforms(transform_params=transform_params, label_is_space_invariant=space_augment)
         self.dataloader_factory(params)
         self.init_metrics()
         self.metrics = self.task_metrics()
@@ -89,6 +90,25 @@ class Trainer():
         self.best_loss = torch.inf
         self.best_model_wts = copy.deepcopy(self.model.state_dict())
 
+    def compose_transforms(self, transform_params, label_is_space_invariant=True):
+        # Composes all wanted transforms into a single transform.
+        trivial_augment = transform_params['trivial_augment']
+        resize = transform_params['resize']
+        input_tsfrm = transforms.Compose([transforms.ToTensor()])
+        target_tsfrm = transforms.Compose([ToTensorWithoutScaling()])
+
+        if resize is not None:
+            input_tsfrm = transforms.Compose(
+                [input_tsfrm, transforms.Resize(resize, antialias=True)])
+            target_tsfrm = transforms.Compose(
+                [target_tsfrm, transforms.Resize(resize, antialias=True)])
+        if trivial_augment:
+            input_tsfrm = transforms.Compose(
+                [input_tsfrm, TrivialAugmentSWOLD(label_is_space_invariant=label_is_space_invariant)])
+
+        tsfrm = {'input': input_tsfrm, 'target': target_tsfrm}
+        return tsfrm
+
     def train_loop(self):
         since = time()
         for epoch in range(self.num_epochs):
@@ -117,10 +137,15 @@ class Trainer():
         save_model(self.model, self.savename)
 
         # Save loss and f1-curves
-        save_fig(self.train_loss_list, self.val_loss_list, f1_train=self.train_f1_list, f1_val=self.val_f1_list,
-                 exp_name=self.savename)
+        self.save_train_val_plot(self.train_loss_list, self.val_loss_list, self.train_f1_list, self.val_f1_list,
+                 self.savename)
 
         return self.model, self.best_epoch, self.best_loss  # , best_acc
+    
+    def save_train_val_plot(self, train_loss_list, val_loss_list, train_f1_list, val_f1_list,
+                 savename):
+            save_fig(self.train_loss_list, self.val_loss_list, self.train_f1_list, self.val_f1_list,
+                 self.savename)
 
     def train_one_epoch(self, epoch):
         self.metrics.reset()
@@ -136,7 +161,7 @@ class Trainer():
             self.optimizer.zero_grad(set_to_none=True)
 
             with torch.set_grad_enabled(True):
-                outputs = self.model(inputs)
+                outputs = self.forward_pass(inputs, targets)
                 preds = self.process_model_out(outputs, device=self.device)
 
                 loss = self.objective(outputs, targets)
@@ -160,8 +185,8 @@ class Trainer():
         self.train_f1_list.append(self.metric_dict['mAF1'])
 
     def val_one_epoch(self, epoch):
-        self.metrics = self.task_metrics()
-        self.losses = Meter()
+        self.metrics.reset()
+        self.losses.reset()
         prog_bar = tqdm(self.dataloaders['val'])
         self.model.eval()
 
@@ -171,7 +196,7 @@ class Trainer():
             inputs, targets = self.preprocess_data(inputs, targets)
 
             with torch.set_grad_enabled(False):
-                outputs = self.model(inputs)
+                outputs = self.forward_pass(inputs, targets)
                 preds = self.process_model_out(outputs, device=self.device)
 
                 loss = self.objective(outputs, targets)
@@ -205,6 +230,9 @@ class Trainer():
                   ' epochs. Stopping training.')
             self.stop_training = True
 
+    def forward_pass(self, input, targets):
+        return self.model(input)
+
     def preprocess_data(self, inputs, targets):
         return inputs.to(self.device), targets.to(self.device)
 
@@ -225,6 +253,7 @@ class Evaluator(Trainer):
     def __init__(self, savename, data_folder, params, transform_params) -> None:
         self.savename = savename
         self.data_folder = data_folder
+        self.im_size = params['im_size']
         self.device = params['device']
         self.num_workers = params['num_workers']
         self.batch_size = params['batch_size']
@@ -235,20 +264,23 @@ class Evaluator(Trainer):
         self.show_val_imgs = params['show_val_imgs']
         self.show_test_imgs = params['show_test_imgs']
         self.model_factory()
-        self.tsfrm = compose_transforms(transform_params=transform_params)
-        self.dataloader_factory(params, transform_params)
+        self.tsfrm = self.compose_transforms(transform_params=transform_params)
+        self.dataloader_factory(params)
         self.metrics = self.task_metrics()
         self.losses = Meter()
 
-    def dataloader_factory(self, params, transform_params):
+    def dataloader_factory(self, params):
         image_dataset = create_dataset(params['use_datasets'], params['quicktest'],
                                        'test', self.tsfrm)
         self.dataloader = torch.utils.data.DataLoader(
-            image_dataset, batch_size=params['batch_size'], shuffle=True,
+            image_dataset, batch_size=params['batch_size'], shuffle=False,
             num_workers=params['num_workers'])
 
     def preprocess_data(self, inputs, targets):
         return inputs.to(self.device), targets
+    
+    def forward_pass(self, input, targets):
+        return self.model(input)
 
     def test_loop(self):
         self.model.eval()
@@ -263,12 +295,12 @@ class Evaluator(Trainer):
             inputs, targets = self.preprocess_data(inputs, targets)
 
             t1 = time()
-            outputs = self.model(inputs)
+            outputs = self.forward_pass(inputs, targets)
             t2 = time()
             times.append(t2-t1)
             preds = self.process_model_out(outputs, device='cpu')
             if self.show_test_imgs:
-                self.show_images(preds, targets)
+                self.show_images(inputs, preds, targets)
 
             self.metrics.update(preds, targets)
 

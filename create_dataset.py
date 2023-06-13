@@ -26,7 +26,7 @@ def create_dataset(use_datasets, quicktest, phase, transform):
     if 'vocdet' in use_datasets:
         dataset_list.append(torchvision.datasets.VOCDetection(
             root=root, image_set=phase, transform=input_transform,
-            target_transform=target_transform, download=True))
+            target_transform=target_transform, download=True, year='2007'))
 
     dataset = ConcatDataset(dataset_list)
     return dataset

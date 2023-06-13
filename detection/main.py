@@ -18,9 +18,9 @@ def main():
     data_folders['test'] = None
     data_folders['inferece'] = "inference_demo"
 
-    experiment_name= "exp1"
+    experiment_name= "betterdet"
 
-    default_im_size = (64, 64)
+    default_im_size = (256, 256)
     downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
@@ -29,10 +29,10 @@ def main():
 
     transform_params = get_default_transform_params(im_size)
 
-    if 1:
+    if 0:
         train_and_test(experiment_name, data_folders, params, transform_params)
 
-    if 0:
+    if 1:
         only_test(experiment_name, data_folders, params, transform_params)
 
 def train_and_test(experiment_name, data_folders, params, transform_params):
@@ -58,7 +58,7 @@ def get_default_params():
 
     # General params
     params['classes'] = ["aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
-                         "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
+                         "diningtable", "pottedplant", "sofa", "tvmonitor", "bird", "cat", "cow", "dog", "horse",
                          "sheep", "person"]
     params['use_cuda'] = torch.cuda.is_available() # use gpu
     params['device'] = "cuda" if params['use_cuda'] else 'cpu'
@@ -69,10 +69,10 @@ def get_default_params():
 
     # Train params
     params['network'] = "fasterrcnn_resnet50"
-    params['show_val_imgs'] = True
+    params['show_val_imgs'] = False
     params['show_test_imgs'] = True
-    params['num_epochs'] = 5
-    params['batch_size'] = 4
+    params['num_epochs'] = 25
+    params['batch_size'] = 8
     params['patience'] = 0.1 * params['num_epochs']
 
     # Optim params
@@ -82,14 +82,19 @@ def get_default_params():
     params['momentum'] = 0.1 # momentum term
     params['nesterov'] = True # use nesterov trick in optimizer
     params['schedule_type'] = 'step'
-    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.1*params['num_epochs'])]))
-    params['lr_gamma'] = 0.1 # learning rate decay
+    params['scheduler_step_size'] = torch.max(torch.tensor([1, int(0.2*params['num_epochs'])]))
+    params['lr_gamma'] = 0.5 # learning rate decay
+
+
+    # Bounding box params
+    params['score_threshold'] = 0.5
+    params['iou_threshold'] = 0.5
     return params
 
 
 def get_default_transform_params(im_size):
     transform_params = {}
-    transform_params['trivial_augment'] = True
+    transform_params['trivial_augment'] = False
     transform_params['resize'] = im_size
     return transform_params
 

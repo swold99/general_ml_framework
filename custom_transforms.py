@@ -50,6 +50,13 @@ class Gray2RGB(object):
     def __call__(self, img):
         return img.expand(3, -1, -1)
 
+class Identity(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, input):
+        return input
+
 
 class ResizeGray(object):
     def __init__(self, size):
@@ -258,23 +265,3 @@ class TrivialAugmentSWOLD(torch.nn.Module):
             f")"
         )
         return s
-
-
-def compose_transforms(transform_params, label_is_space_invariant=True):
-    # Composes all wanted transforms into a single transform.
-    trivial_augment = transform_params['trivial_augment']
-    resize = transform_params['resize']
-    input_tsfrm = transforms.Compose([transforms.ToTensor()])
-    target_tsfrm = transforms.Compose([ToTensorWithoutScaling()])
-
-    if resize is not None:
-        input_tsfrm = transforms.Compose(
-            [input_tsfrm, transforms.Resize(resize, antialias=True)])
-        target_tsfrm = transforms.Compose(
-            [target_tsfrm, transforms.Resize(resize, antialias=True)])
-    if trivial_augment:
-        input_tsfrm = transforms.Compose(
-            [input_tsfrm, TrivialAugmentSWOLD(label_is_space_invariant=label_is_space_invariant)])
-
-    tsfrm = {'input': input_tsfrm, 'target': target_tsfrm}
-    return tsfrm
