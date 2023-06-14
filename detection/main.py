@@ -4,62 +4,63 @@ import sys
 from pprint import pprint
 
 import torch
-
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from detection.test import DetectionEvaluator
 from detection.train import DetectionTrainer
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
-
-    # Add argparser?
-
-    # Specify folders for data
-    data_folders = {}
-    data_folders['train'] = None
-    data_folders['val'] = None
-    data_folders['test'] = None
-    data_folders['inferece'] = "inference_demo"
-
+    # Set the experiment name
     experiment_name = "betterdet"
 
+    # Set the default image size and downsample factor
     default_im_size = (256, 256)
     downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
+    # Get the default parameters and update the image size
     params = get_default_params()
     params['im_size'] = im_size
 
+    # Get the default transform parameters
     transform_params = get_default_transform_params(im_size)
 
     if 0:
-        train_and_test(experiment_name, data_folders, params, transform_params)
+        # Train and test the model
+        train_and_test(experiment_name, params, transform_params)
 
     if 1:
-        only_test(experiment_name, data_folders, params, transform_params)
+        # Only test the model
+        only_test(experiment_name, params, transform_params)
 
 
-def train_and_test(experiment_name, data_folders, params, transform_params):
+def train_and_test(experiment_name, params, transform_params):
+    # Create a model trainer for detection
+    model_trainer = DetectionTrainer(experiment_name, params, transform_params)
 
-    model_trainer = DetectionTrainer(
-        experiment_name, data_folders, params, transform_params)
+    # Train the model
     model_trainer.train_loop()
-    model_evaluator = DetectionEvaluator(
-        experiment_name, data_folders, params, transform_params)
+
+    # Create a model evaluator for detection
+    model_evaluator = DetectionEvaluator(experiment_name, params, transform_params)
+
+    # Test the model
     metrics = model_evaluator.test_loop()
-    pprint(metrics)
-    return
+
+    # Return the metrics
+    return metrics
 
 
-def only_test(model_name, data_folders, params, transform_params):
+def only_test(model_name, params, transform_params):
+    # Create a model evaluator for detection
+    model_evaluator = DetectionEvaluator(model_name, params, transform_params)
 
-    model_evaluator = DetectionEvaluator(
-        model_name, data_folders, params, transform_params)
+    # Test the model
     metrics = model_evaluator.test_loop()
-    pprint(metrics)
-    return
 
+    # Return the metrics
+    return metrics
 
 def get_default_params():
 
@@ -91,7 +92,7 @@ def get_default_params():
     parser.add_argument('--show_val_imgs', type=bool,
                         default=False, help='Show validation images')
     parser.add_argument('--show_test_imgs', type=bool,
-                        default=True, help='Show test images')
+                        default=False, help='Show test images')
     parser.add_argument('--num_epochs', type=int,
                         default=25, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
@@ -127,7 +128,8 @@ def get_default_params():
     # Create the params dictionary
     params = vars(args)
 
-    # Set number of classes and patience (in epochs)    params['num_classes'] = len(params['classes'])
+    # Set number of classes and patience (in epochs)    
+    params['num_classes'] = len(params['classes'])
     params['patience'] = params['patience']*params['num_epochs']
     params['scheduler_step_size'] = torch.max(torch.tensor(
         [1, int(params['scheduler_step_size']*params['num_epochs'])]))

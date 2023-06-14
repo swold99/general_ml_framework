@@ -4,25 +4,15 @@ import sys
 from pprint import pprint
 
 import torch
-
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from segmentation.test import SegmentationEvaluator
 from segmentation.train import SegmentationTrainer
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
 
-    # Add argparser?
-
-    # Specify folders for data
-    data_folders = {}
-    data_folders['train'] = None
-    data_folders['val'] = None
-    data_folders['test'] = None
-    data_folders['inferece'] = "inference_demo"
-
-    experiment_name = "exp1"
+    experiment_name = "basemodel_segmentation"
 
     default_im_size = (256, 256)
     downsample_factor = 1
@@ -33,32 +23,46 @@ def main():
 
     transform_params = get_default_transform_params(im_size)
 
+    # Train and test the model
     if 1:
-        train_and_test(experiment_name, data_folders, params, transform_params)
+        train_and_test(experiment_name, params, transform_params)
 
+    # Only test the model
     if 0:
-        only_test(experiment_name, data_folders, params, transform_params)
+        only_test(experiment_name, params, transform_params)
 
 
-def train_and_test(experiment_name, data_folders, params, transform_params):
-
+def train_and_test(experiment_name, params, transform_params):
+    # Create a segmentation trainer object
     model_trainer = SegmentationTrainer(
-        experiment_name, data_folders, params, transform_params)
+        experiment_name, params, transform_params)
+    
+    # Train the model
     model_trainer.train_loop()
+    
+    # Create a segmentation evaluator object
     model_evaluator = SegmentationEvaluator(
-        experiment_name, data_folders, params, transform_params)
+        experiment_name, params, transform_params)
+    
+    # Test the model and obtain evaluation metrics
     metrics = model_evaluator.test_loop()
+    
+    # Print the evaluation metrics
     pprint(metrics)
+    
     return
 
 
-def only_test(model_name, data_folders, params, transform_params):
-
+def only_test(model_name, params, transform_params):
+    # Create a segmentation evaluator object
     model_evaluator = SegmentationEvaluator(
-        model_name, data_folders, params, transform_params)
+        model_name, params, transform_params)
+    
+    # Test the model and obtain evaluation metrics
     metrics = model_evaluator.test_loop()
-    pprint(metrics)
+    
     return
+
 
 
 def get_default_params():
@@ -79,9 +83,9 @@ def get_default_params():
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available()
                         else 'cpu', help='Device (cuda or cpu)')
     parser.add_argument('--num_workers', type=int,
-                        default=4, help='Number of workers')
+                        default=1, help='Number of workers')
     parser.add_argument('--quicktest', type=bool,
-                        default=True, help='Quick test')
+                        default=False, help='Quick test')
     parser.add_argument('--use_datasets', type=list,
                         default=['vocseg'], help='List of datasets')
 
@@ -91,9 +95,9 @@ def get_default_params():
     parser.add_argument('--show_val_imgs', type=bool,
                         default=False, help='Show validation images')
     parser.add_argument('--show_test_imgs', type=bool,
-                        default=False, help='Show test images')
+                        default=True, help='Show test images')
     parser.add_argument('--num_epochs', type=int,
-                        default=25, help='Number of epochs')
+                        default=150, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--patience', type=float, default=0.1, help='Patience')
 
@@ -103,7 +107,7 @@ def get_default_params():
     parser.add_argument('--loss_fn', type=str,
                         default='cross_entropy', help='Loss function')
     parser.add_argument('--learning_rate', type=float,
-                        default=0.01, help='Learning rate')
+                        default=0.001, help='Learning rate')
     parser.add_argument('--momentum', type=float,
                         default=0.1, help='Momentum term')
     parser.add_argument('--nesterov', type=bool, default=True,
@@ -111,9 +115,9 @@ def get_default_params():
     parser.add_argument('--schedule_type', type=str,
                         default='step', help='Scheduler type')
     parser.add_argument('--scheduler_step_size', type=int,
-                        default=0.2, help='Scheduler step size')
+                        default=0.3, help='Scheduler step size')
     parser.add_argument('--lr_gamma', type=float,
-                        default=0.5, help='Learning rate decay')
+                        default=0.8, help='Learning rate decay')
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -121,7 +125,8 @@ def get_default_params():
     # Create the params dictionary
     params = vars(args)
 
-    # Set number of classes and patience (in epochs)    params['num_classes'] = len(params['classes'])
+    # Set number of classes and patience (in epochs)    
+    params['num_classes'] = len(params['classes'])
     params['patience'] = params['patience']*params['num_epochs']
     params['scheduler_step_size'] = torch.max(torch.tensor(
         [1, int(params['scheduler_step_size']*params['num_epochs'])]))

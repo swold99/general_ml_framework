@@ -44,13 +44,19 @@ class MinMaxScaler(object):
 
 
 class Gray2RGB(object):
+    """Convert grayscale image to RGB"""
+
     def __init__(self):
         pass
 
     def __call__(self, img):
+        # Expand grayscale image to have 3 channels (RGB)
         return img.expand(3, -1, -1)
 
+
 class Identity(object):
+    """Return the input without any transformation"""
+
     def __init__(self):
         pass
 
@@ -59,27 +65,31 @@ class Identity(object):
 
 
 class ResizeGray(object):
+    """Resize grayscale image to the specified size"""
+
     def __init__(self, size):
         self.size = size
 
     def __call__(self, img):
+        # Expand grayscale image to have 1 channel
         img = img.expand(1, 1, -1, -1)
         real_resize = transforms.Resize(self.size)
         return real_resize(img)
 
 
 class HistogramEqualization(object):
+    """Perform histogram equalization on the image"""
+
     def __init__(self, transform_params):
         self.contrast_factor = transform_params['contrast_factor']
         self.clipLimit = transform_params['clip_limit']
         self.tileGridSize = transform_params['tile_grid_size']
 
     def __call__(self, img):
-        # Performs histogram equalization. Do not know how to compose it into a single transform
+        # Perform histogram equalization using OpenCV's CLAHE algorithm
         img = img.numpy()
-        img = (img*(2**16-1)).astype('uint16')
-        clahe = cv2.createCLAHE(clipLimit=self.clipLimit,
-                                tileGridSize=self.tileGridSize)
+        img = (img * (2**16 - 1)).astype('uint16')
+        clahe = cv2.createCLAHE(clipLimit=self.clipLimit, tileGridSize=self.tileGridSize)
         cl1 = clahe.apply(img)
         img = cl1.astype('float32')
         img = torch.from_numpy(img)
@@ -89,9 +99,12 @@ class HistogramEqualization(object):
 
 
 class ToTensorWithoutScaling(object):
+    """Convert the image to a tensor without scaling the pixel values"""
+
     def __call__(self, img):
+        # Convert the image to a tensor and handle specific value conversions
         mask = torch.from_numpy(np.array(img)).unsqueeze(0)
-        mask[mask == 255] = 21
+        mask[mask == 255] = 21  # Convert specific pixel values to a different value
         return mask
 
 
@@ -212,20 +225,20 @@ class TrivialAugmentSWOLD(torch.nn.Module):
             "Color": (torch.linspace(0.0, 0.99, num_bins), True),
             "Contrast": (torch.linspace(0.0, 0.99, num_bins), True),
             "Sharpness": (torch.linspace(0.0, 0.99, num_bins), True),
-            #"Posterize": (8 - (torch.arange(num_bins) / ((num_bins - 1) / 6)).round().int(), False),
+            # "Posterize": (8 - (torch.arange(num_bins) / ((num_bins - 1) / 6)).round().int(), False),
             "AutoContrast": (torch.tensor(0.0), False),
-            #"Equalize": (torch.tensor(0.0), False),
+            # "Equalize": (torch.tensor(0.0), False),
         }
         if self.label_is_space_invariant:
             aug_space.update({
-                    "ShearX": (torch.linspace(0.0, 0.99, num_bins), True),
-                    "ShearY": (torch.linspace(0.0, 0.99, num_bins), True),
-                    "TranslateX": (torch.linspace(0.0, 32.0, num_bins), True),
-                    "TranslateY": (torch.linspace(0.0, 32.0, num_bins), True),
-                    "Rotate": (torch.linspace(0.0, 135.0, num_bins), True)
+                "ShearX": (torch.linspace(0.0, 0.99, num_bins), True),
+                "ShearY": (torch.linspace(0.0, 0.99, num_bins), True),
+                "TranslateX": (torch.linspace(0.0, 32.0, num_bins), True),
+                "TranslateY": (torch.linspace(0.0, 32.0, num_bins), True),
+                "Rotate": (torch.linspace(0.0, 135.0, num_bins), True)
             })
         return aug_space
-    
+
     def forward(self, img: Tensor) -> Tensor:
         """
             img (PIL Image or Tensor): Image to be transformed.

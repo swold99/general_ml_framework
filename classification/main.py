@@ -4,62 +4,72 @@ import sys
 from pprint import pprint
 
 import torch
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from classification.test import ClassificationEvaluator
 from classification.train import ClassificationTrainer
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
 
-    # Add argparser?
+    # Set the experiment name
+    experiment_name = "basemodel_class"
 
-    # Specify folders for data
-    data_folders = {}
-    data_folders['train'] = None
-    data_folders['val'] = None
-    data_folders['test'] = None
-    data_folders['inferece'] = "inference_demo"
-
-    experiment_name = "exp1"
-
+    # Set the default image size and downsample factor
     default_im_size = (64, 64)
     downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
+    # Get the default parameters and update the image size
     params = get_default_params()
     params['im_size'] = im_size
 
+    # Get the default transform parameters
     transform_params = get_default_transform_params(im_size)
 
     if 0:
-        train_and_test(experiment_name, data_folders, params, transform_params)
+        # Train and test the model
+        train_and_test(experiment_name, params, transform_params)
 
     if 1:
-        only_test(experiment_name, data_folders, params, transform_params)
+        # Only test the model
+        only_test(experiment_name, params, transform_params)
 
 
-def train_and_test(experiment_name, data_folders, params, transform_params):
+def train_and_test(experiment_name, params, transform_params):
 
+    # Create a model trainer for classification
     model_trainer = ClassificationTrainer(
-        experiment_name, data_folders, params, transform_params)
+        experiment_name, params, transform_params)
+
+    # Train the model
     model_trainer.train_loop()
+
+    # Create a model evaluator for classification
     model_evaluator = ClassificationEvaluator(
-        experiment_name, data_folders, params, transform_params)
+        experiment_name, params, transform_params)
+
+    # Test the model
     metrics = model_evaluator.test_loop()
+
+    # Print the metrics
     pprint(metrics)
     return
 
 
-def only_test(model_name, data_folders, params, transform_params):
+def only_test(model_name, params, transform_params):
 
+    # Create a model evaluator for classification
     model_evaluator = ClassificationEvaluator(
-        model_name, data_folders, params, transform_params)
+        model_name, params, transform_params)
+
+    # Test the model
     metrics = model_evaluator.test_loop()
+
+    # Print the metrics
     pprint(metrics)
     return
-
 
 def get_default_params():
 
@@ -78,7 +88,7 @@ def get_default_params():
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available()
                         else 'cpu', help='Device (cuda or cpu)')
     parser.add_argument('--num_workers', type=int,
-                        default=4, help='Number of workers')
+                        default=8, help='Number of workers')
     parser.add_argument('--quicktest', type=bool,
                         default=True, help='Quick test')
     parser.add_argument('--use_datasets', type=list,
@@ -93,7 +103,7 @@ def get_default_params():
                         default=False, help='Show test images')
     parser.add_argument('--num_epochs', type=int,
                         default=25, help='Number of epochs')
-    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch size')
     parser.add_argument('--patience', type=float, default=0.1, help='Patience')
 
     # Optim params
@@ -112,7 +122,7 @@ def get_default_params():
     parser.add_argument('--scheduler_step_size', type=int,
                         default=0.2, help='Scheduler step size')
     parser.add_argument('--lr_gamma', type=float,
-                        default=0.5, help='Learning rate decay')
+                        default=0.8, help='Learning rate decay')
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -120,7 +130,8 @@ def get_default_params():
     # Create the params dictionary
     params = vars(args)
 
-    # Set number of classes and patience (in epochs)    params['num_classes'] = len(params['classes'])
+    # Set number of classes and patience (in epochs)    
+    params['num_classes'] = len(params['classes'])
     params['patience'] = params['patience']*params['num_epochs']
     params['scheduler_step_size'] = torch.max(torch.tensor(
         [1, int(params['scheduler_step_size']*params['num_epochs'])]))

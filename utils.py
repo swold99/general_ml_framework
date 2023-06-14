@@ -1,6 +1,5 @@
 import os
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -14,6 +13,7 @@ def save_model(model, name):
     path = os.path.join(folder, name + ".pth")
     torch.save(model.state_dict(), path)
 
+
 def load_model_state(model, name, local=True):
     """Loads the state of the model which is saved in *name*"""
     model.cuda()
@@ -22,9 +22,11 @@ def load_model_state(model, name, local=True):
     model.eval()
     return model
 
+
 def collate_fn(batch):
     # Really useful function
     return tuple(zip(*batch))
+
 
 def custom_collate_fn(batch):
     # Find the maximum height and width in the batch
@@ -35,13 +37,16 @@ def custom_collate_fn(batch):
     stacked_targets = []
     for img, target in batch:
         # Pad the image to match the maximum height and width
-        padded_img = torch.nn.functional.pad(img, (0, max_width - img.size(2), 0, max_height - img.size(1)))
+        padded_img = torch.nn.functional.pad(
+            img, (0, max_width - img.size(2), 0, max_height - img.size(1)))
         stacked_images.append(padded_img)
         stacked_targets.append(target)
 
-    stacked_images = torch.stack(stacked_images)  # Stack the images along a new batch dimension
+    # Stack the images along a new batch dimension
+    stacked_images = torch.stack(stacked_images)
 
     return stacked_images, stacked_targets
+
 
 def move_to(obj, device):
     # Move all items of list or dicts to specified device
@@ -60,96 +65,6 @@ def move_to(obj, device):
         return res
     else:
         raise TypeError("Invalid type for move_to")
-
-def calc_IoU(boxA, boxB, xyxy=True):
-    # Calculate intersection over union
-
-    if not xyxy:
-        boxA_area = boxA[2]*boxA[3]
-        boxBarea = boxB[2]*boxB[3]
-
-        # Get corners of bounding boxes
-        boxA_x_min, boxA_x_max = boxA[0] - boxA[2], boxA[0] + boxA[2]
-        boxA_y_min, boxA_y_max = boxA[1] - boxA[3], boxA[1] + boxA[3]
-
-        boxB_x_min, boxB_x_max = boxB[0] - boxB[2], boxB[0] + boxB[2]
-        boxB_y_min, boxB_y_max = boxB[1] - boxA[3], boxB[1] + boxB[3]
-    else:
-        boxA_area = abs(boxA[0]-boxA[2])*abs(boxA[1]-boxA[3])
-        boxBarea = abs(boxB[0]-boxB[2])*abs(boxB[1]-boxB[3])
-
-        boxA_x_min, boxA_y_min, boxA_x_max, boxA_y_max = boxA[0], boxA[1], boxA[2], boxA[3]
-        boxB_x_min, boxB_y_min, boxB_x_max, boxB_y_max = boxB[0], boxB[1], boxB[2], boxB[3]
-
-    # Get corners of intersection rectangle
-    inter_x_min, inter_x_max = max(boxA_x_min, boxB_x_min), min(boxA_x_max, boxB_x_max)
-    inter_y_min, inter_y_max = max(boxA_y_min, boxB_y_min), min(boxA_y_max, boxB_y_max)
-
-    intersection = max(0, inter_x_max - inter_x_min) * max(0, inter_y_max - inter_y_min)
-
-    union = boxA_area + boxBarea - intersection
-
-    iou = intersection/union
-    return iou
-
-def remove_duplicates(boxes, scores, labels, iou_threshold):
-    # Remove overlapping bounding boxes, only keep the one with the highest score
-    best_box_idx = []
-    removed_box_idx = []
-
-    # Loop through all boxes
-    for i in range(boxes.shape[0]):
-
-        # Check if it has been removed already
-        if i not in removed_box_idx:
-            intersecting_box_idx = [i]
-
-            # Loop through the rest of the boxes
-            for j in range(i+1, boxes.shape[0]):
-
-                # Check if some of the rest of the boxes has been removed
-                if j not in removed_box_idx:
-                    iou = calc_IoU(boxes[i,:], boxes[j,:])
-
-                    # Add to list of intersecting boxes if there is a overlap
-                    if iou > iou_threshold:
-                        intersecting_box_idx.append(j)
-
-            # Get the best box
-            max_score_idx = torch.argmax(scores[intersecting_box_idx])
-            max_score_box = intersecting_box_idx[max_score_idx]
-            best_box_idx.append(max_score_box)
-
-            # Remove the rest
-            intersecting_box_idx.remove(max_score_box)
-            removed_box_idx = removed_box_idx + intersecting_box_idx
-
-    # Return coordinates, labels and scores of best bounding boxes
-    unique_boxes = boxes[best_box_idx, :]
-    unique_labels = labels[best_box_idx]
-    unique_scores = scores[best_box_idx]
-    return unique_boxes, unique_labels, unique_scores
-
-def show_bounding_boxes(image, pred_boxes, true_boxes, pred_classes, label_classes, sample_fname, scores):
-    # Shows bounding boxes on image
-    spaces = []
-    for box in pred_boxes:
-        width = box[2]-box[0]
-        spaces.append(int(width/6))
-    pred_classes_and_scores = [" "*spaces[i] + "%s %.3f"  % (pred_classes[i], scores[i]) for i in range(len(pred_classes))]
-    drawn_boxes = draw_bounding_boxes((image*255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
-
-    if true_boxes is not None:
-        drawn_boxes = draw_bounding_boxes(drawn_boxes, true_boxes,  colors="red")#labels=label_classes, colors="red")
-    print(sample_fname)
-
-    if torch.numel(pred_boxes) == 0:
-        drawn_boxes = drawn_boxes.to('cpu')
-
-    cv2.imshow(drawn_boxes)
-    cv2.waitKey(0)
-    return
-
 
 
 def save_fig(train_loss, val_loss, f1_train=None, f1_val=None,
@@ -179,6 +94,7 @@ def save_fig(train_loss, val_loss, f1_train=None, f1_val=None,
 
     return
 
+
 def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename, num_classes):
     # Assuming you have the predicted labels and true labels as numpy arrays
 
@@ -187,9 +103,11 @@ def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename,
     true_labels = torch.tensor(true_labels)
 
     # Create confusion matrix
-    cm = confusion_matrix(true_labels, predicted_labels, task='multiclass', num_classes=num_classes)
+    cm = confusion_matrix(true_labels, predicted_labels,
+                          task='multiclass', num_classes=num_classes)
 
     # Plot confusion matrix
+    plt.figure()
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title('Confusion Matrix')
     plt.colorbar()
@@ -202,7 +120,7 @@ def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename,
     for i in range(len(class_labels)):
         for j in range(len(class_labels)):
             plt.text(j, i, format(cm[i, j], 'd'), ha='center', va='center',
-                    color='white' if cm[i, j] > thresh else 'black')
+                     color='white' if cm[i, j] > thresh else 'black')
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
@@ -213,18 +131,20 @@ def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename,
     # Show the confusion matrix
     plt.show()
 
+
 def show_classification_imgs(inputs, targets, preds):
     for i in range(inputs.shape[0]):
-        plt.imshow(inputs[i, ...].permute(1,2,0))
+        plt.imshow(inputs[i, ...].permute(1, 2, 0))
         plt.title(f'Label: {targets[i]}, Prediction: {preds[i]}')
         plt.show()
+
 
 def show_segmentation_imgs(inputs, targets, preds, colormap):
     titles = ['Input', 'Label', 'Prediction']
     for i in range(inputs.shape[0]):
         target_color = apply_colormap(targets[i, ...], colormap)
         pred_color = apply_colormap(preds[i, ...], colormap)
-        imgs = [inputs[i, ...].permute(1,2,0), target_color, pred_color]
+        imgs = [inputs[i, ...].permute(1, 2, 0), target_color, pred_color]
         # Create subplots with 1 row and 3 columns
         fig, axs = plt.subplots(1, 3)
         for j in range(3):
@@ -235,28 +155,43 @@ def show_segmentation_imgs(inputs, targets, preds, colormap):
         # Adjust the layout to avoid overlapping titles
         plt.tight_layout()
         plt.show()
-        
-def show_detection_imgs(inputs, preds, targets):
+
+
+def show_detection_imgs(inputs, preds, targets, classes):
+    """
+    Display images with predicted and ground truth bounding boxes.
+
+    Args:
+        inputs (list): List of input images.
+        preds (list): List of dictionaries containing predicted bounding boxes, labels, and scores.
+        targets (list): List of dictionaries containing ground truth bounding boxes and labels.
+        classes (list): List of class labels.
+
+    Returns:
+        None
+    """
     for i in range(len(inputs)):
         pred_boxes, pred_labels, pred_scores = preds[i]['boxes'], preds[i]['labels'], preds[i]['scores']
         target_boxes, target_labels = targets[i]['boxes'], targets[i]['labels']
         spaces = []
         for box in pred_boxes:
-            width = box[2]-box[0]
-            spaces.append(int(width/6))
-        pred_classes_and_scores = [" "*spaces[i] + "%s %.3f"  % (pred_labels[i].item(), pred_scores[i]) for i in range(len(pred_labels))]
+            width = box[2] - box[0]
+            spaces.append(int(width / 6))
+        pred_classes_and_scores = [" " * spaces[i] + "%s %.3f" % (
+            classes[pred_labels[i].item()], pred_scores[i]) for i in range(len(pred_labels))]
 
         for box in target_boxes:
-            width = box[2]-box[0]
-            spaces.append(int(width/6))
-        target_labels = [" "*spaces[i] + str(target_labels[i].item()) for i in range(len(target_labels))]
-        drawn_boxes = draw_bounding_boxes((inputs[i]*255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
-        drawn_boxes = draw_bounding_boxes(drawn_boxes, target_boxes, labels=target_labels, colors="red")#labels=label_classes, colors="red")
-        plt.imshow(drawn_boxes.permute(1,2,0))
+            width = box[2] - box[0]
+            spaces.append(int(width / 6))
+        target_labels = [" " * spaces[i] + classes[target_labels[i].item()]
+                         for i in range(len(target_labels))]
+        drawn_boxes = draw_bounding_boxes(
+            (inputs[i] * 255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
+        drawn_boxes = draw_bounding_boxes(
+            drawn_boxes, target_boxes, labels=target_labels, colors="red")
+        plt.imshow(drawn_boxes.permute(1, 2, 0))
         plt.title('Predicted bounding boxes (blue) and ground truth bounding boxes (red)')
         plt.show()
-
-
 
 
 
@@ -266,23 +201,35 @@ def show_bounding_boxes(image, pred_boxes, true_boxes, pred_classes, label_class
     for box in pred_boxes:
         width = box[2]-box[0]
         spaces.append(int(width/6))
-    pred_classes_and_scores = [" "*spaces[i] + "%s %.3f"  % (pred_classes[i], scores[i]) for i in range(len(pred_classes))]
-    drawn_boxes = draw_bounding_boxes((image*255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
+    pred_classes_and_scores = [" "*spaces[i] + "%s %.3f" %
+                               (pred_classes[i], scores[i]) for i in range(len(pred_classes))]
+    drawn_boxes = draw_bounding_boxes(
+        (image*255).type(torch.uint8), pred_boxes, labels=pred_classes_and_scores, colors="blue")
 
     if true_boxes is not None:
-        drawn_boxes = draw_bounding_boxes(drawn_boxes, true_boxes,  colors="red")#labels=label_classes, colors="red")
+        # labels=label_classes, colors="red")
+        drawn_boxes = draw_bounding_boxes(
+            drawn_boxes, true_boxes,  colors="red")
     print(sample_fname)
 
     if torch.numel(pred_boxes) == 0:
         drawn_boxes = drawn_boxes.to('cpu')
 
-    
     return
-    
+
 
 def apply_colormap(mask, colormap):
-    rgb_image = colormap(mask)[:, :, :3] * 255
-    rgb_image = rgb_image.astype(np.uint8)
+    """
+    Apply a colormap to a mask image.
+
+    Args:
+        mask (ndarray): Mask image.
+        colormap (Callable): Colormap function.
+
+    Returns:
+        ndarray: RGB image with the applied colormap.
+    """
+    rgb_image = colormap(mask)[:, :, :3] * 255  # Apply colormap and select RGB channels
+    rgb_image = rgb_image.astype(np.uint8)  # Convert image to uint8 data type
     return rgb_image
 
-    
