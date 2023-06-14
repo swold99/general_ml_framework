@@ -17,23 +17,26 @@ General ML Framework is a repository that provides a comprehensive set of tools 
 ## Installation
 
 1. Clone the repository:
+'''
 git clone https://github.com/your-username/ml-image-toolkit.git
-
+'''
 
 2. Install the required dependencies:
-
+'''
 pip install -r requirements.txt
-
+'''
 
 3. Set up the project environment:
 
 Optional: Create a virtual environment
+'''
 python -m venv env
 source env/bin/activate # Activate the virtual environment (Linux/macOS)
-
+'''
 OR
+'''
 .\env\Scripts\activate # Activate the virtual environment (Windows)
-
+'''
 
 ## Usage
 
