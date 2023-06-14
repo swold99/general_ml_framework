@@ -53,7 +53,7 @@ OR
 
 - Run the training script for your desired task:
 
-  Go to *TASK*/main.py and adjust the if-statements according to your desire
+  Go to \*TASK\*/main.py and adjust the if-statements according to your desire
 
 4. Monitor the training:
 
@@ -63,7 +63,7 @@ OR
 
 - Run the evaluation script for your desired task:
 
-  Go to *TASK*/main.py and adjust the if-statements according to your desire
+  Go to \*TASK\*/main.py and adjust the if-statements according to your desire
 
 6. Customize and extend:
 
