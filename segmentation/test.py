@@ -8,8 +8,8 @@ import torch
 
 
 class SegmentationEvaluator(Evaluator):
-    def __init__(self, savename, data_folder, params, transform_params) -> None:
-        super().__init__(savename, data_folder, params, transform_params)
+    def __init__(self, savename, params, transform_params) -> None:
+        super().__init__(savename, params, transform_params)
         self.colormap = plt.cm.get_cmap('jet', self.num_classes)
 
     def task_metrics(self):
@@ -38,9 +38,17 @@ class SegmentationEvaluator(Evaluator):
         # Preprocess inputs and targets for evaluation
         return inputs.to(self.device), targets.squeeze(1)
     
+    def forward_pass(self, input, targets):
+        # Perform a forward pass of the input through the model
+        output = self.model(input)
+        if self.network == 'deeplab':
+            return output['out']
+        return output
+    
     def process_model_out(self, outputs, device):
         # Process the model's output to obtain predicted segmentation labels
         return torch.argmax(outputs, axis=1).to(device)
+    
 
     def show_images(self, inputs, targets, preds):
         # Show images with ground truth and predicted segmentation masks

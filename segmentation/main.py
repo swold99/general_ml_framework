@@ -12,7 +12,7 @@ from segmentation.train import SegmentationTrainer
 
 def main():
 
-    experiment_name = "basemodel_segmentation"
+    experiment_name = "basemodel_segmentation_augment"
 
     default_im_size = (256, 256)
     downsample_factor = 1
@@ -24,11 +24,11 @@ def main():
     transform_params = get_default_transform_params(im_size)
 
     # Train and test the model
-    if 1:
+    if 0:
         train_and_test(experiment_name, params, transform_params)
 
     # Only test the model
-    if 0:
+    if 1:
         only_test(experiment_name, params, transform_params)
 
 
@@ -83,7 +83,7 @@ def get_default_params():
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available()
                         else 'cpu', help='Device (cuda or cpu)')
     parser.add_argument('--num_workers', type=int,
-                        default=1, help='Number of workers')
+                        default=8, help='Number of workers')
     parser.add_argument('--quicktest', type=bool,
                         default=False, help='Quick test')
     parser.add_argument('--use_datasets', type=list,
@@ -91,33 +91,39 @@ def get_default_params():
 
     # Train params
     parser.add_argument('--network', type=str,
-                        default="unet", help='Network type')
+                        default="deeplab", help='Network type') # 'unet', 'deeplab'
     parser.add_argument('--show_val_imgs', type=bool,
                         default=False, help='Show validation images')
     parser.add_argument('--show_test_imgs', type=bool,
                         default=True, help='Show test images')
     parser.add_argument('--num_epochs', type=int,
-                        default=150, help='Number of epochs')
-    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
+                        default=50, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=12, help='Batch size')
     parser.add_argument('--patience', type=float, default=0.1, help='Patience')
 
     # Optim params
     parser.add_argument('--optim_type', type=str,
-                        default='sgd', help='Optimizer type')
+                        default='adamw', help='Optimizer type') # 'sgd', 'adam', 'adamw'
     parser.add_argument('--loss_fn', type=str,
-                        default='cross_entropy', help='Loss function')
+                        default='cross_entropy', help='Loss function') # 'cross_entropy', 'dice'
     parser.add_argument('--learning_rate', type=float,
                         default=0.001, help='Learning rate')
+    parser.add_argument('--weight_decay', type=float,
+                        default=0.01, help='Weight decay')
+    
+    # SGD params
     parser.add_argument('--momentum', type=float,
                         default=0.1, help='Momentum term')
     parser.add_argument('--nesterov', type=bool, default=True,
                         help='Use Nesterov trick in optimizer')
+    
+    # Learning rate scheduling params
     parser.add_argument('--schedule_type', type=str,
                         default='step', help='Scheduler type')
     parser.add_argument('--scheduler_step_size', type=int,
-                        default=0.3, help='Scheduler step size')
+                        default=0.1, help='Scheduler step size')
     parser.add_argument('--lr_gamma', type=float,
-                        default=0.8, help='Learning rate decay')
+                        default=0.9, help='Learning rate decay')
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -136,7 +142,7 @@ def get_default_params():
 
 def get_default_transform_params(im_size):
     transform_params = {}
-    transform_params['trivial_augment'] = False
+    transform_params['trivial_augment'] = True
     transform_params['resize'] = im_size
 
     return transform_params

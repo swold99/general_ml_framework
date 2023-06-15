@@ -14,12 +14,12 @@ from torchvision.ops import nms
 
 
 class DetectionEvaluator(Evaluator):
-    def __init__(self, savename, data_folder, params, transform_params) -> None:
+    def __init__(self, savename, params, transform_params) -> None:
         # Initialize the score threshold and IoU threshold
         self.score_threshold = params['score_threshold']
         self.iou_threshold = params['iou_threshold']
         # Call the parent class constructor
-        super().__init__(savename, data_folder, params, transform_params)
+        super().__init__(savename, params, transform_params)
 
     def task_metrics(self):
         # Create and return a DetectionMeter for tracking detection metrics

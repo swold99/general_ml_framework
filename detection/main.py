@@ -100,21 +100,27 @@ def get_default_params():
 
     # Optim params
     parser.add_argument('--optim_type', type=str,
-                        default='sgd', help='Optimizer type')
+                        default='sgd', help='Optimizer type') # 'sgd', 'adam', 'adamw'
     parser.add_argument('--loss_fn', type=str,
-                        default='cross_entropy', help='Loss function')
+                        default='cross_entropy', help='Loss function') # 'cross_entropy', 'dice'
     parser.add_argument('--learning_rate', type=float,
                         default=0.01, help='Learning rate')
+    parser.add_argument('--weight_decay', type=float,
+                        default=0.01, help='Weight decay')
+    
+    # SGD params
     parser.add_argument('--momentum', type=float,
                         default=0.1, help='Momentum term')
     parser.add_argument('--nesterov', type=bool, default=True,
                         help='Use Nesterov trick in optimizer')
+    
+    # Learning rate scheduling params
     parser.add_argument('--schedule_type', type=str,
                         default='step', help='Scheduler type')
     parser.add_argument('--scheduler_step_size', type=int,
-                        default=0.2, help='Scheduler step size')
+                        default=0.3, help='Scheduler step size')
     parser.add_argument('--lr_gamma', type=float,
-                        default=0.5, help='Learning rate decay')
+                        default=0.8, help='Learning rate decay')
 
     # Bounding box params
     parser.add_argument('--score_threshold', type=float,

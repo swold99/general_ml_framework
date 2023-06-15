@@ -12,6 +12,7 @@ from create_dataset import create_dataset
 from metrics import Meter
 from utils import save_model, save_fig
 import torch.backends.cudnn as cudnn
+from losses.dice_loss import DiceLoss
 
 class Trainer():
     def __init__(self, savename, params, transform_params) -> None:
@@ -62,11 +63,16 @@ class Trainer():
         lr_gamma = params['lr_gamma']
         step_size = params['scheduler_step_size']
         schedule_type = params['schedule_type']
+        weight_decay = params['weight_decay']
         
         if optim_type == "sgd":
             # Use Stochastic Gradient Descent optimizer
             self.optimizer = torch.optim.SGD(params=self.model.parameters(), lr=learning_rate,
-                                             momentum=momentum, nesterov=nesterov)
+                                             momentum=momentum, nesterov=nesterov, weight_decay=weight_decay)
+        elif optim_type == 'adam':
+            self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        elif optim_type == 'adamw':
+            self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=learning_rate, weight_decay=weight_decay)
         else:
             raise Exception('Optimizer not implemented')
 
@@ -84,6 +90,9 @@ class Trainer():
         loss_fn = params['loss_fn']
         if "cross_entropy" in loss_fn:
             self.objective = nn.CrossEntropyLoss()
+        
+        if "dice" in loss_fn:
+            self.objective = DiceLoss(mode='multiclass')
 
     def dataloader_factory(self, params):
         # Create the data loaders for the training and validation datasets
@@ -105,7 +114,7 @@ class Trainer():
         self.best_loss = torch.inf
         self.best_model_wts = copy.deepcopy(self.model.state_dict())
 
-    def compose_transforms(self, transform_params, label_is_space_invariant=True):
+    def compose_transforms(self, transform_params, label_is_space_invariant=True, phase='train'):
         # Composes all wanted transforms into a single transform.
         trivial_augment = transform_params['trivial_augment']
         resize = transform_params['resize']
@@ -118,7 +127,7 @@ class Trainer():
             target_tsfrm = transforms.Compose(
                 [target_tsfrm, transforms.Resize(resize, antialias=True)])
         
-        if trivial_augment:
+        if trivial_augment and phase != 'test':
             input_tsfrm = transforms.Compose(
                 [input_tsfrm, TrivialAugmentSWOLD(label_is_space_invariant=label_is_space_invariant)])
 
@@ -318,7 +327,7 @@ class Evaluator(Trainer):
         self.show_val_imgs = params['show_val_imgs']
         self.show_test_imgs = params['show_test_imgs']
         self.model_factory()
-        self.tsfrm = self.compose_transforms(transform_params=transform_params)
+        self.tsfrm = self.compose_transforms(transform_params=transform_params, phase='test')
         self.dataloader_factory(params)
         self.metrics = self.task_metrics()
         self.losses = Meter()

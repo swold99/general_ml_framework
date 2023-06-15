@@ -1,8 +1,10 @@
 import torch.nn as nn
 from torchvision.models import ResNet18_Weights, detection, resnet18
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from torchvision.models import segmentation
 
 from networks.unet import UNet
+import torch
 
 
 def create_classification_model(network, device, num_classes):
@@ -26,6 +28,10 @@ def create_segmentation_model(network, device, num_classes):
     if 'unet' in network:
         # Create a UNet model with the specified number of input and output channels
         model = UNet(in_channels=3, out_channels=num_classes)
+
+    if 'deeplab' in network:
+        model = segmentation.deeplabv3_resnet50(num_classes=num_classes)
+
 
     return model
 

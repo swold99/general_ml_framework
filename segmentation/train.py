@@ -11,8 +11,8 @@ from utils import show_segmentation_imgs
 from matplotlib import pyplot as plt
 
 class SegmentationTrainer(Trainer):
-    def __init__(self, savename, data_folder, params, transform_params) -> None:
-        super().__init__(savename, data_folder, params, transform_params)
+    def __init__(self, savename, params, transform_params) -> None:
+        super().__init__(savename, params, transform_params)
         self.colormap = plt.cm.get_cmap('jet', self.num_classes)
 
     def model_factory(self):
@@ -30,6 +30,13 @@ class SegmentationTrainer(Trainer):
     def preprocess_data(self, inputs, targets):
         # Preprocess inputs and targets for training
         return inputs.to(self.device), targets.to(self.device).squeeze(1).long()
+    
+    def forward_pass(self, input, targets):
+        # Perform a forward pass of the input through the model
+        output = self.model(input)
+        if self.network == 'deeplab':
+            return output['out']
+        return output
     
     def show_images(self, inputs, targets, preds):
         # Show images with ground truth and predicted segmentation masks
