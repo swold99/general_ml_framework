@@ -199,7 +199,7 @@ class Trainer():
                 self.optimizer.step()
 
             # Move tensors to CPU for evaluation
-            inputs, targets, preds = inputs.cpu(), targets.cpu(), preds.cpu()
+            inputs, targets, preds = inputs.detach().cpu(), targets.detach().cpu(), preds.detach().cpu()
 
             # Show images if required
             if 0:

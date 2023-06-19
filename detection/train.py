@@ -115,7 +115,7 @@ class DetectionTrainer(Trainer):
             # Preprocess inputs and targets
             inputs, targets = self.preprocess_data(inputs, targets)
 
-            with torch.set_grad_enabled(False):
+            with torch.no_grad():
                 # Perform forward pass through the model without gradient computation
                 outputs = self.forward_pass(inputs, targets)
                 # Calculate the loss
