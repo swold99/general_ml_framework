@@ -37,7 +37,7 @@ class DetectionTrainer(Trainer):
         image_datasets = {phase: create_dataset(params['use_datasets'], params['quicktest'],
                                                 phase, self.transform) for phase in self.phases}
         self.dataloaders = {phase: torch.utils.data.DataLoader(
-            image_datasets[phase], batch_size=params['batch_size'], shuffle=True,
+            image_datasets[phase], batch_size=params['batch_size'], shuffle=False,
             num_workers=params['num_workers'], collate_fn=collate_fn) for phase in self.phases}
 
     def preprocess_data(self, inputs, targets):
@@ -45,20 +45,23 @@ class DetectionTrainer(Trainer):
         for element in targets:
             annotation = element['annotation']
             objects = annotation['object']
-            scaling = [float(annotation['size']['height'])/self.im_size[0],
-                    float(annotation['size']['width'])/self.im_size[1]]
+            scaling = [float(annotation['size']['height'])/self.im_size[1],
+                       float(annotation['size']['width'])/self.im_size[0]]
             N = len(objects)
             boxes = torch.empty((N, 4), dtype=torch.float)
             labels = torch.empty((N), dtype=torch.int64)
-            for i, object in enumerate(objects):
-                bndbox = object['bndbox']
+            for i, obj in enumerate(objects):
+                bndbox = obj['bndbox']
                 box = [bndbox['xmin'], bndbox['ymin'],
-                    bndbox['xmax'], bndbox['ymax']]
+                       bndbox['xmax'], bndbox['ymax']]
+                # Calculate scaled box coordinates
                 boxes[i, :] = torch.FloatTensor(
                     [float(val)/scaling[1-(j % 2)] for j, val in enumerate(box)])
-                labels[i] = self.classes.index(object['name'])
+                # Set the label index
+                labels[i] = self.classes.index(obj['name'])
             tmp.append({'boxes': boxes, 'labels': labels})
 
+        # Return preprocessed inputs and targets
         return move_to(list(inputs), self.device), move_to(tmp, self.device)
 
     def train_one_epoch(self, epoch):

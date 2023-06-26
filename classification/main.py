@@ -14,11 +14,11 @@ from classification.train import ClassificationTrainer
 def main():
 
     # Set the experiment name
-    experiment_name = "basemodel_class"
+    experiment_name = "test"
 
     # Set the default image size and downsample factor
     default_im_size = (64, 64)
-    downsample_factor = 1
+    downsample_factor = 4
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
     # Get the default parameters and update the image size
@@ -102,7 +102,7 @@ def get_default_params():
     parser.add_argument('--show_test_imgs', type=bool,
                         default=False, help='Show test images')
     parser.add_argument('--num_epochs', type=int,
-                        default=25, help='Number of epochs')
+                        default=1, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size')
     parser.add_argument('--patience', type=float, default=0.1, help='Patience')
 

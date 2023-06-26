@@ -180,6 +180,8 @@ class Trainer():
         self.model.train()
 
         for batch_idx, item in enumerate(prog_bar):
+            if batch_idx == 100:
+                break
             inputs, targets = item
 
             # Preprocess data

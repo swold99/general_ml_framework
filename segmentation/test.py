@@ -5,9 +5,10 @@ from networks.create_model import create_segmentation_model
 from matplotlib import pyplot as plt
 from create_dataset import create_dataset
 import torch
+from train import SegmentationTrainer
 
 
-class SegmentationEvaluator(Evaluator):
+class SegmentationEvaluator(Evaluator, SegmentationTrainer):
     def __init__(self, savename, params, transform_params) -> None:
         super().__init__(savename, params, transform_params)
         self.colormap = plt.cm.get_cmap('jet', self.num_classes)
@@ -44,13 +45,4 @@ class SegmentationEvaluator(Evaluator):
         if self.network == 'deeplab':
             return output['out']
         return output
-    
-    def process_model_out(self, outputs, device):
-        # Process the model's output to obtain predicted segmentation labels
-        return torch.argmax(outputs, axis=1).to(device)
-    
-
-    def show_images(self, inputs, targets, preds):
-        # Show images with ground truth and predicted segmentation masks
-        show_segmentation_imgs(inputs, targets, preds, self.colormap)
 
