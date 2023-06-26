@@ -209,12 +209,12 @@ class Trainer():
             self.losses.update(loss.item())
             self.metrics.update(preds, targets)
 
+            # Update progress bar description with running loss
+            desc = f'Running loss: {round(self.losses.avg, 5)}'
+            prog_bar.set_description(desc)
+
         # Adjust the learning rate
         self.scheduler.step()
-
-        # Update progress bar description with running loss
-        desc = f'Running loss: {round(self.losses.avg, 5)}'
-        prog_bar.set_description(desc)
 
         # Calculate epoch loss and append to the train loss list
         epoch_loss = self.losses.avg

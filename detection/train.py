@@ -90,12 +90,12 @@ class DetectionTrainer(Trainer):
             # Update losses with the current batch loss
             self.losses.update(loss.item())
 
+            # Update progress bar description with current loss
+            desc = (f'Running loss: {round(self.losses.avg,5)}')
+            prog_bar.set_description(desc)
+
         # Step the scheduler to update the learning rate
         self.scheduler.step()
-
-        # Update progress bar description with current loss
-        desc = (f'Running loss: {round(self.losses.avg,5)}')
-        prog_bar.set_description(desc)
 
         epoch_loss = self.losses.avg
         self.train_loss_list.append(epoch_loss)

@@ -28,11 +28,11 @@ def main():
     # Get the default transform parameters
     transform_params = get_default_transform_params(im_size)
 
-    if 0:
+    if 1:
         # Train and test the model
         train_and_test(experiment_name, params, transform_params)
 
-    if 1:
+    if 0:
         # Only test the model
         only_test(experiment_name, params, transform_params)
 
