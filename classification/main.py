@@ -18,7 +18,7 @@ def main():
 
     # Set the default image size and downsample factor
     default_im_size = (64, 64)
-    downsample_factor = 4
+    downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
     # Get the default parameters and update the image size

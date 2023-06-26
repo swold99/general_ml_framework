@@ -174,14 +174,12 @@ class Trainer():
         # Reset metrics and losses
         self.metrics.reset()
         self.losses.reset()
+        self.model.train()
 
         # Create a progress bar for visualization
         prog_bar = tqdm(self.dataloaders['train'])
-        self.model.train()
 
         for batch_idx, item in enumerate(prog_bar):
-            if batch_idx == 100:
-                break
             inputs, targets = item
 
             # Preprocess data
@@ -232,10 +230,10 @@ class Trainer():
         # Reset metrics and losses
         self.metrics.reset()
         self.losses.reset()
+        self.model.eval()
 
         # Create a progress bar for visualization
         prog_bar = tqdm(self.dataloaders['val'])
-        self.model.eval()
 
         for batch_idx, item in enumerate(prog_bar):
             inputs, targets = item
