@@ -2,3 +2,5 @@
 *.pth
 playground*
 *.png
+*.jpg
+*.pt
