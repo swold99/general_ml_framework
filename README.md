@@ -18,7 +18,7 @@ General ML Framework is a repository that provides a comprehensive set of tools 
 
 1. Clone the repository:
 ```
-git clone https://github.com/your-username/ml-image-toolkit.git
+git clone https://github.com/swold99/general_ml_framework.git
 ```
 
 2. Install the required dependencies:
