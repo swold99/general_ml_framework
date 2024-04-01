@@ -24,5 +24,5 @@ class ClassificationTrainer(Trainer):
     
     def show_images(self, inputs, targets, preds):
         # Show the images along with their corresponding targets and predicted labels
-        show_classification_imgs(inputs, targets, preds)
+        show_classification_imgs(inputs, targets, preds, self.classes, save=True)
 

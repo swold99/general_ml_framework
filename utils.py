@@ -132,11 +132,19 @@ def plot_save_conf_matrix(predicted_labels, true_labels, class_labels, filename,
     plt.show()
 
 
-def show_classification_imgs(inputs, targets, preds):
+def show_classification_imgs(inputs, targets, preds, classes, save=False):
+    if save:
+        save_folder = "saved_imgs"
+        os.makedirs(save_folder, exist_ok=True)
+        idx = len(os.listdir(save_folder))
     for i in range(inputs.shape[0]):
         plt.imshow(inputs[i, ...].permute(1, 2, 0))
-        plt.title(f'Label: {targets[i]}, Prediction: {preds[i]}')
-        plt.show()
+        plt.title(f'Label: {classes[targets[i]]}, Prediction: {classes[preds[i]]}')
+        if save:
+            plt.savefig(os.path.join(save_folder, f"{classes[preds[i]]}_{idx}.png"), dpi=500)
+            idx += 1
+        else:
+            plt.show()
 
 
 def show_segmentation_imgs(inputs, targets, preds, colormap):

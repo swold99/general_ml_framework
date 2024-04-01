@@ -98,7 +98,7 @@ class Trainer():
         # Create the data loaders for the training and validation datasets
         self.phases = ['train', 'val']
         image_datasets = {phase: create_dataset(params['use_datasets'], params['quicktest'],
-                                                phase, self.transform) for phase in self.phases}
+                                                phase, self.transform, self.classes) for phase in self.phases}
         self.dataloaders = {phase: torch.utils.data.DataLoader(
             image_datasets[phase], batch_size=params['batch_size'], shuffle=True,
             num_workers=params['num_workers']) for phase in self.phases}
@@ -212,6 +212,7 @@ class Trainer():
             # Update progress bar description with running loss
             desc = f'Running loss: {round(self.losses.avg, 5)}'
             prog_bar.set_description(desc)
+        
 
         # Adjust the learning rate
         self.scheduler.step()
@@ -335,7 +336,7 @@ class Evaluator(Trainer):
     def dataloader_factory(self, params):
         # Create a test dataset and dataloader
         image_dataset = create_dataset(params['use_datasets'], params['quicktest'],
-                                       'test', self.tsfrm)
+                                       'test', self.tsfrm, self.classes)
         self.dataloader = torch.utils.data.DataLoader(
             image_dataset, batch_size=params['batch_size'], shuffle=False,
             num_workers=params['num_workers'])

@@ -9,7 +9,7 @@ import torchvision
 from pathlib import Path
 
 
-def create_dataset(use_datasets, quicktest, phase, transform):
+def create_dataset(use_datasets, quicktest, phase, transform, classes):
     # Function to create a dataset based on the specified options
     root = os.path.join(os.path.dirname(os.getcwd()), 'datasets')
     if not os.path.exists(root):
@@ -34,6 +34,9 @@ def create_dataset(use_datasets, quicktest, phase, transform):
         dataset_list.append(torchvision.datasets.VOCDetection(
             root=root, image_set=phase, transform=input_transform,
             target_transform=target_transform, download=True, year='2007'))
+        
+    if 'neu' in use_datasets:
+        dataset_list.append(NEU(img_dir=os.path.join(os.getcwd(), os.pardir, "yolo_demo", "datasets", "neu", phase, "images"), transform=input_transform, classes=classes))
         
     # Add more datasets by uncommenting the code and implementing the respective dataset class
     # if 'your_dataset' in use_datasets:
@@ -81,6 +84,27 @@ class CustomImageDataset(Dataset):
             df = df[:int(0.1*len(df))]
         return df
     
+
+class NEU(Dataset):
+    # Custom dataset class inherited from CustomImageDataset
+    def __init__(self, img_dir, transform=None, quicktest=False, classes=[]):
+        self.img_dir = img_dir
+        self.img_dir_content = os.listdir(img_dir)
+        self.transform = transform
+        self.quicktest = quicktest
+        self.classes = classes
+
+    def __len__(self):
+        return len(self.img_dir_content)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_dir, self.img_dir_content[idx])
+        image = Image.open(img_path)
+        label = self.classes.index(os.path.basename(img_path).split("_")[0])
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+
 class YourDataset(CustomImageDataset):
     # Custom dataset class inherited from CustomImageDataset
     def something():

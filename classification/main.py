@@ -17,7 +17,7 @@ def main():
     experiment_name = "test"
 
     # Set the default image size and downsample factor
-    default_im_size = (64, 64)
+    default_im_size = (256, 256)
     downsample_factor = 1
     im_size = tuple([int(x/downsample_factor) for x in default_im_size])
 
@@ -28,11 +28,11 @@ def main():
     # Get the default transform parameters
     transform_params = get_default_transform_params(im_size)
 
-    if 1:
+    if 0:
         # Train and test the model
         train_and_test(experiment_name, params, transform_params)
 
-    if 0:
+    if 1:
         # Only test the model
         only_test(experiment_name, params, transform_params)
 
@@ -81,8 +81,10 @@ def get_default_params():
                         default='classification', help='Task')  # DO NOT CHANGE
 
     # General params
-    parser.add_argument('--classes', type=list, default=["airplane", "automobile",
-                        "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"], help='Classes')
+    default_classes = ["airplane", "automobile",
+                        "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+    classes = ['crazing', 'inclusion', 'patches', 'pitted', 'rolled-in', 'scratches']
+    parser.add_argument('--classes', type=list, default=classes, help='Classes')
     parser.add_argument('--use_cuda', type=bool,
                         default=torch.cuda.is_available(), help='Use GPU')
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available()
@@ -92,7 +94,7 @@ def get_default_params():
     parser.add_argument('--quicktest', type=bool,
                         default=True, help='Quick test')
     parser.add_argument('--use_datasets', type=list,
-                        default=['cifar10'], help='List of datasets')
+                        default=['neu'], help='List of datasets')
 
     # Train params
     parser.add_argument('--network', type=str,
@@ -100,9 +102,9 @@ def get_default_params():
     parser.add_argument('--show_val_imgs', type=bool,
                         default=False, help='Show validation images')
     parser.add_argument('--show_test_imgs', type=bool,
-                        default=False, help='Show test images')
+                        default=True, help='Show test images')
     parser.add_argument('--num_epochs', type=int,
-                        default=1, help='Number of epochs')
+                        default=10, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size')
     parser.add_argument('--patience', type=float, default=0.1, help='Patience')
 
