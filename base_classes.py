@@ -118,7 +118,10 @@ class Trainer():
         # Composes all wanted transforms into a single transform.
         trivial_augment = transform_params['trivial_augment']
         resize = transform_params['resize']
-        input_tsfrm = transforms.Compose([transforms.ToTensor()])
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        input_tsfrm = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)])
         target_tsfrm = transforms.Compose([ToTensorWithoutScaling()])
 
         if resize is not None:

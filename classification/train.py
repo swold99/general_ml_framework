@@ -16,6 +16,11 @@ class ClassificationTrainer(Trainer):
     def task_metrics(self):
         # Create and return a ClassificationMeter for tracking classification metrics
         return ClassificationMeter(self.classes, self.savename)
+    
+    def preprocess_data(self, inputs, targets):
+        targets[targets == len(self.classes)] == 0
+        # Move the inputs and targets tensors to the device (GPU)
+        return inputs.to(self.device), targets.to(self.device)
 
     def process_model_out(self, outputs, device):
         # Process the model outputs by taking the argmax along the axis=1 (class dimension)

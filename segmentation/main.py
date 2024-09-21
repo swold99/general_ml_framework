@@ -24,11 +24,11 @@ def main():
     transform_params = get_default_transform_params(im_size)
 
     # Train and test the model
-    if 0:
+    if 1:
         train_and_test(experiment_name, params, transform_params)
 
     # Only test the model
-    if 1:
+    if 0:
         only_test(experiment_name, params, transform_params)
 
 
@@ -72,12 +72,13 @@ def get_default_params():
 
     # Add arguments to the parser
     parser.add_argument('--task', type=str,
-                        default='classification', help='Task')  # DO NOT CHANGE
+                        default='segmentation', help='Task')  # DO NOT CHANGE
 
     # General params
     parser.add_argument('--classes', type=list, default=["background", "aeroplane", "bicycle", "boat", "bus", "car", "motorbike", "train", "bottle", "chair",
                                                          "dining table", "potted plant", "sofa", "TV/monitor", "bird", "cat", "cow", "dog", "horse",
-                                                         "sheep", "person", "boundary"], help='Classes')
+                                                         "sheep", "person"], help='Classes')
+
     parser.add_argument('--use_cuda', type=bool,
                         default=torch.cuda.is_available(), help='Use GPU')
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available()
@@ -107,7 +108,7 @@ def get_default_params():
     parser.add_argument('--loss_fn', type=str,
                         default='cross_entropy', help='Loss function') # 'cross_entropy', 'dice'
     parser.add_argument('--learning_rate', type=float,
-                        default=0.001, help='Learning rate')
+                        default=0.05, help='Learning rate')
     parser.add_argument('--weight_decay', type=float,
                         default=0.01, help='Weight decay')
     

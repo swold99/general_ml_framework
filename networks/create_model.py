@@ -30,7 +30,7 @@ def create_segmentation_model(network, device, num_classes):
         model = UNet(in_channels=3, out_channels=num_classes)
 
     if 'deeplab' in network:
-        model = segmentation.deeplabv3_resnet50(num_classes=num_classes)
+        model = segmentation.deeplabv3_resnet50(weights=segmentation.DeepLabV3_ResNet50_Weights, num_classes=num_classes)
 
 
     return model
